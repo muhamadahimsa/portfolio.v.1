@@ -1,0 +1,294 @@
+*,
+*:before,
+*:after {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+@font-face {
+  font-family: 'General';
+  src: url('../Asset/Fonts/WEB/fonts/GeneralSans-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}
+:root {
+  --primary: #E6E6E6;
+  --secondary: #000000;
+  --white: #ffffff;
+  --alternate: #d0d0d0;
+
+  --blue: #002FA7;
+  --yellow: #adff30;
+  --green: #00ff01;
+  --border-radius: 3px;
+  --grid-line: #3a3a3a;
+  --slider-height: 40rem;
+}
+img,
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+section {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+}
+a {
+  text-decoration: none;
+  color: var(--secondary);
+}
+.ofh {
+  overflow: hidden;
+}
+
+.lock-scroll {
+  touch-action: none;
+}
+
+/* Lenis */
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+
+body.noscroll {
+  overflow: hidden;
+}
+
+/* Transition */
+.transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  visibility: visible;
+}
+.transition-row {
+  flex: 1;
+  display: flex;
+  pointer-events: none;
+}
+.transition-row.row-1 .block {
+  transform-origin: top;
+}
+.transition-row.row-2 .block {
+  transform-origin: bottom;
+}
+.block {
+  flex: 1;
+  background-color: var(--blue);
+  transform: scaleY(1);
+  will-change: transform;
+  margin-right: -1px; /* Overlap 1px ke kanan untuk menutup celah antar kolom */
+  border: none;
+  outline: 1px solid var(--blue);
+}
+.block:last-child {
+  margin-right: 0;
+}
+.loader-time {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  color: var(--primary);
+  font-size: 10rem;
+  font-weight: 600;
+  letter-spacing: -.5rem;
+  height: 10rem;
+  line-height: 1;
+  width: auto;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.loader-time p {
+  position: relative;
+  margin: 0;
+  will-change: transform, top;
+}
+
+.enter-overlay{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  z-index: 1002;
+  pointer-events: auto;
+}
+#enter-btn{
+  position: relative;
+  transform: translateY(100%);
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02rem;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+/* Nav */
+nav {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 1.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+.nav-btn {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14rem;
+  height: 2.5rem;
+  background: var(--white);
+  color: var(--secondary);
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+}
+.nav-btn .btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.nav-btn .ofh {
+  position: relative;
+  height: 1.2rem;
+  width: 5rem;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.open,
+.close {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.03rem;
+  display: block;
+  text-align: center;
+  text-transform: uppercase;
+}
+.burger-icon {
+  position: absolute;
+  right: 1.5rem;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.burger-icon .line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: var(--secondary);
+  transform-origin: center;
+  transition: background 0.3s;
+}
+/* Berikan posisi awal agar terlihat seperti hamburger (Garis Dua) */
+.burger-icon .line.top {
+  transform: translateY(-2px);
+}
+.burger-icon .line.bottom {
+  transform: translateY(2px);
+}
+
+.nav-menu {
+  position: relative;
+  top: 2.7rem;
+  width: 14rem;
+  height: 0rem;
+  z-index: 10;
+  background: var(--white);
+  pointer-events: none;
+  opacity: 0;
+}
+.nav-menu-wrapper {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.nav-menu-wrapper a {
+  display: inline-block;
+  position: relative;
+  --tx: 0px;
+  --ty: 110%;
+  transform: translate(var(--tx), var(--ty));
+  color: var(--secondary);
+  transition: 0.3s ease-out;
+  width: 100%;
+  padding: 0 0 0.25rem 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.1;
+  letter-spacing: -0.05rem;
+  border-bottom: dashed 1px var(--secondary);
+  z-index: 1;
+}
+.nav-menu-wrapper a span {
+  font-size: 10px;
+  position: relative;
+  transition: 0.3s ease-out;
+}
+.nav-menu-wrapper a p {
+  position: relative;
+  transition: 0.3s ease-out;
+}
+.nav-menu-wrapper a:hover {
+  color: var(--primary);
+  background-color: var(--secondary);
+}
+.nav-menu-wrapper a:hover span,
+.nav-menu-wrapper a:hover p {
+  left: 10px;
+}
+.nav-menu-footer{
+  position: absolute;
+  bottom: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.nav-menu-footer p{
+  position: relative;
+  --tx: 0px;
+  --ty: 110%;
+  transform: translate(var(--tx), var(--ty));
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+.nav-menu-footer-wrapper{
+  margin-bottom: 1rem;
+}

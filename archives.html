@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./Css/setting.css" />
+    <link rel="stylesheet" href="./Css/archives.css" />
+    <link rel="stylesheet" href="./Css/splitting-cells.css" />
+    <link rel="stylesheet" href="./Css/splitting.css" />
+    <title>Archives | Muhamad Ahimsa</title>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Transition -->
+    <div class="transition">
+      <div class="transition-row row-1">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+      <div class="transition-row row-2">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+    </div>
+
+    <div class="vignette"></div>
+
+    <div class="site-wrapper">
+      <nav class="--magnetic">
+        <div class="nav-btn">
+          <div class="btn-container">
+            <div class="ofh">
+              <span class="btn-text open">Menu</span>
+              <span class="btn-text close">Close</span>
+            </div>
+          </div>
+          <div class="burger-icon">
+            <span class="line top"></span>
+            <span class="line bottom"></span>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <div class="nav-menu-wrapper">
+            <div class="ofh">
+              <a href="./index.html">
+                <span>(A)</span>
+                <p>Index</p>
+              </a>
+            </div>
+            <div class="ofh">
+              <a href="./about.html">
+                <span>(B)</span>
+                <p>About</p>
+              </a>
+            </div>
+            <div class="ofh">
+              <a href="./archives.html">
+                <span>(C)</span>
+                <p>Archives</p>
+              </a>
+            </div>
+            <div class="ofh">
+              <a href="./contact.html">
+                <span>(D)</span>
+                <p>Contact</p>
+              </a>
+            </div>
+          </div>
+          <div class="nav-menu-footer">
+            <div class="nav-menu-footer-wrapper">
+              <div class="ofh"><p>Muhamad Ahimsa</p></div>
+              <div class="ofh"><p>All Rights Reserved</p></div>
+            </div>
+            <div class="ofh"><p>Made with Anxiety</p></div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="main">
+        <div class="header">
+          <h1>Raw fragments of interaction design, documenting my evolution in the world of creative development.</h1>
+        </div>
+      </div>
+
+      <div class="crosshair">
+        <div class="line horizontal"></div>
+        <div class="line vertical"></div>
+      </div>
+      <div class="dot"></div>
+      <div class="coords">
+        <div class="ofh">
+          <div class="coord-block"></div>
+          <span id="coordX">0</span>
+        </div>
+        <div class="ofh">
+          <span id="coordY">0</span>
+          <div class="coord-block"></div>
+        </div>
+      </div>
+
+      <div class="archives-btn">
+        <div class="--button">
+          <div class="btn-wrapper">
+            <div class="btn-container">
+              <span class="btn-text btn-globe active-text">Cube</span>
+              <span class="btn-text btn-list">List</span>
+              <div class="btn-active"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="archives">
+        <div class="archive-wrapper inner">
+          <div class="archive-title">
+            <h2>archives</h2>
+            <p>(20)</p>
+          </div>
+
+          <div class="archives-info">
+            <p>
+              A look behind the curtain at the prototypes and experiments that define my craft. This archive captures the raw intersection of mathematics, art, and front-end performance.
+            </p>
+          </div>
+
+          <section class="awards">
+            <div class="awards-title">
+              <div class="awards-title-wrapper">
+                <div class="ofh">
+                  <p>N</p>
+                  <p>Title</p>
+                </div>
+                <p>Focus</p>
+              </div>
+            </div>
+            <div class="awards-list"></div>
+          </section>
+        </div>
+        <div class="archive-bg"></div>
+      </div>
+      <div class="award-preview"></div>
+    </div>
+
+    <script type="module" src="./Javascript/transition.js"></script>
+    <script type="module" src="./Javascript/nav.js"></script>
+    <script type="module" src="./Javascript/archives.js"></script>
+  </body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./Css/setting.css" />
+    <link rel="stylesheet" href="./Css/style.css" />
+    <link rel="stylesheet" href="./Css/splitting-cells.css" />
+    <link rel="stylesheet" href="./Css/splitting.css" />
+    <title>Index | Muhamad Ahimsa</title>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Transition -->
+    <div class="transition">
+      <div class="transition-row row-1">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+      <div class="transition-row row-2">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+
+      <div class="loader-time">
+        <p id="loader-number">0</p>
+      </div>
+
+      <div id="enter-overlay" class="enter-overlay">
+        <div id="enter-btn">
+          <p>( Click to Enter )</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="site-wrapper">
+      <!-- Nav -->
+      <nav class="--magnetic">
+        <div class="nav-btn">
+          <div class="btn-container">
+            <div class="ofh">
+              <span class="btn-text open">Menu</span>
+              <span class="btn-text close">Close</span>
+            </div>
+          </div>
+          <div class="burger-icon">
+            <span class="line top"></span>
+            <span class="line bottom"></span>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <div class="nav-menu-wrapper">
+            <div class="ofh">
+              <a href="./index.html"
+                ><span>(A)</span>
+                <p>Index</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./about.html"
+                ><span>(B)</span>
+                <p>About</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./archives.html"
+                ><span>(C)</span>
+                <p>Archives</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./contact.html"
+                ><span>(D)</span>
+                <p>Contact</p></a
+              >
+            </div>
+          </div>
+          <div class="nav-menu-footer">
+            <div class="nav-menu-footer-wrapper">
+              <div class="ofh"><p>Muhamad Ahimsa</p></div>
+              <div class="ofh"><p>All Rights Reserved</p></div>
+            </div>
+            <div class="ofh"><p>Made with Anxiety</p></div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Content -->
+      <section class="hero">
+        <div class="projects">
+          <div class="project-title">
+            <span>Selected Projects</span>
+          </div>
+          <a
+            href="./arunika-agency.html"
+            class="project"
+            data-img="./Asset/Images/project-1/phone.webp"
+          >
+            <div class="ofh">
+              <h1>Arunika <sup>(1)</sup></h1>
+              <h1>Arunika <sup>(1)</sup></h1>
+            </div>
+          </a>
+          <a
+            href="./rodalink.html"
+            class="project"
+            data-img="./Asset/Images/project-2/hero.webp"
+          >
+            <div class="ofh">
+              <h1>Rodalink <sup>(2)</sup></h1>
+              <h1>Rodalink <sup>(2)</sup></h1>
+            </div>
+          </a>
+          <a
+            href="./athelier.html"
+            class="project"
+            data-img="./Asset/Images/project-3/hero.webp"
+          >
+            <div class="ofh">
+              <h1>Athelier <sup>(3)</sup></h1>
+              <h1>Athelier <sup>(3)</sup></h1>
+            </div>
+          </a>
+          <a
+            href="./alex-g.html"
+            class="project"
+            data-img="./Asset/Images/project-4/hero.webp"
+          >
+            <div class="ofh">
+              <h1>Alex G <sup>(4)</sup></h1>
+              <h1>Alex G <sup>(4)</sup></h1>
+            </div>
+          </a>
+        </div>
+        <div class="view-projects">
+          <div class="view-wrapper">
+            <a href="./arunika-agency.html" class="view">View Project (1)</a>
+            <a href="./rodalink.html" class="view">View Project (2)</a>
+            <a href="./athelier.html" class="view">View Project (3)</a>
+            <a href="./alex-g.html" class="view">View Project (4)</a>
+          </div>
+        </div>
+        <footer>
+          <div class="footer-wrapper">
+            <p>Muhamad Ahimsa</p>
+            <p>Designer&Developer</p>
+          </div>
+          <div class="footer-wrapper">
+            <p>Indonesia</p>
+            <p class="time">12:50:30</p>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+    <!-- Script -->
+    <script type="module" src="./Javascript/transition.js"></script>
+    <script type="module" src="./Javascript/nav.js"></script>
+    <script type="module" src="./Javascript/script.js"></script>
+  </body>
+</html>

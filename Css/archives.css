@@ -1,0 +1,502 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+body {
+  overflow-x: hidden;
+  width: 100vw;
+  height: 100%;
+
+  background-color: var(--secondary);
+  font-family: "General";
+  color: var(--primary);
+}
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}
+
+/* 3D */
+.header {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 1rem;
+  letter-spacing: -0.05rem;
+  line-height: 1;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 155;
+}
+
+.crosshair {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 155;
+}
+
+.line {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.509);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.horizontal {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+}
+
+.vertical {
+  width: 1px;
+  height: 100%;
+  top: 0;
+  left: 50%;
+}
+
+.coords {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 2rem;
+  font-size: 14px;
+  z-index: 20;
+  pointer-events: none;
+}
+.coords .ofh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.coords span {
+  color: var(--primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.coord-block {
+  position: relative;
+  background: var(--primary);
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.archives-btn {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 160;
+}
+.archives-btn .--button .btn-wrapper {
+  display: block;
+  background: var(--primary);
+  color: var(--secondary);
+  overflow: hidden;
+  position: relative;
+}
+.archives-btn .btn-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 1.5rem;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+}
+.archives-btn .btn-text {
+  position: relative;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  transition: 0.3s ease-out;
+  will-change: transform;
+  z-index: 2;
+}
+.archives-btn .btn-text.active-text {
+  color: var(--primary);
+}
+.btn-active {
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 80%;
+  background-color: var(--secondary);
+  border-radius: 2px;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform, width, left;
+}
+
+/* Archives */
+.archives {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 150;
+}
+.archives.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.archives .inner {
+  will-change: transform;
+}
+.archive-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--white);
+  width: 100vw;
+  min-height: 100vh;
+  height: 70rem;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+body.archives-active {
+  overflow: hidden;
+}
+.archive-title {
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+  padding: 3rem 3rem 0rem 3rem;
+}
+.archive-title h2 {
+  font-size: 6rem;
+  font-weight: 700;
+  letter-spacing: -0.3rem;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+.archive-title p {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--secondary);
+}
+.archives-info {
+  position: absolute;
+  top: 50%;
+  right: 3rem;
+  transform: translateY(-50%);
+  color: var(--secondary);
+  width: 30vw;
+  text-align: justify;
+}
+.archives-info p {
+  line-height: 1.2;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.03rem;
+  line-height: 100%;
+}
+
+.awards {
+  min-height: 100vh;
+  height: max-content;
+  padding: 10rem 50vw 2rem 0;
+
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.awards-title {
+  width: 50vw;
+  padding: 0rem 3rem 0rem 3rem;
+  color: var(--secondary);
+  opacity: 0.5;
+}
+.awards-title-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--secondary);
+}
+.awards-title p {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.03rem;
+  line-height: 100%;
+}
+.awards-title .ofh {
+  display: flex;
+  gap: 4.25rem;
+}
+.awards-list {
+  padding-top: 2rem;
+}
+.award {
+  height: 30px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  overflow: hidden;
+}
+.award-wrapper {
+  position: relative;
+  display: block;
+  height: 90px;
+  will-change: transform;
+  transform: translateY(-0px);
+}
+.award-name,
+.award-project {
+  width: 50vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 30px;
+  padding: 0 3rem;
+  cursor: pointer;
+}
+.award p {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.03rem;
+  line-height: 100%;
+}
+.award-name {
+  background-color: var(--white);
+  color: var(--secondary);
+}
+.award-project {
+  background-color: var(--secondary);
+  color: var(--primary);
+}
+.award-name-wrapper {
+  display: flex;
+  gap: 2rem;
+}
+.award-name-wrapper p:nth-child(1) {
+  padding: 1.25rem 0.75rem 1.25rem 0rem;
+  width: 2rem;
+}
+.award-name-wrapper p:nth-child(2) {
+  padding: 1.25rem 0.75rem;
+}
+.award-project p:nth-child(1) {
+  font-weight: 500;
+  margin-left: 4.75rem;
+}
+.award-project p:nth-child(2) {
+  font-weight: 500;
+}
+.award-preview {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40rem;
+  height: 22.5rem;
+  z-index: 165;
+  pointer-events: none;
+  overflow: hidden;
+  background: transparent;
+}
+
+.archive-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  --blur: 0px; /* Nilai awal */
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  opacity: 1;
+  pointer-events: none;
+  will-change: backdrop-filter, opacity;
+  transform: translateZ(0); /* Force Hardware Acceleration */
+  backface-visibility: hidden;
+  z-index: -1;
+}
+body.archives-active .archive-bg {
+  pointer-events: all;
+}
+
+.vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10;
+  pointer-events: none;
+
+  /* TRIK: Gunakan beberapa layer shadow untuk gradasi yang 'mahal' */
+  box-shadow: 
+        /* Layer 1: Bayangan halus di pinggir banget */
+    inset 0 0 150px rgba(0, 0, 0, 1),
+    /* Layer 2: Shadow yang lebih luas buat efek 'dimming' */ inset 0 0 300px
+      rgba(0, 0, 0, 0.9),
+    /* Layer 3: Shadow super luas buat nutupin sudut-sudut kotak Three.js */
+    inset 0 0 500px rgba(0, 0, 0, 0.8);
+
+  /* OPSIONAL: Tambahin gradien linear di 4 sisi biar sudutnya lebih gelap lagi */
+  /* background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 100%); */
+}
+
+nav .nav-menu {
+  color: var(--secondary);
+}
+
+/* Laptop & Tablet Landscape */
+@media (max-width: 1200px) {
+  .header {
+    width: 70%;
+  }
+}
+
+/* Tablet Portrait */
+@media (max-width: 992px) {
+}
+
+/* Large Mobile */
+@media (max-width: 768px) {
+  .header {
+    width: 80%;
+    font-size: 1rem;
+  }
+  .awards {
+    padding: 10rem 0vw 2rem 0;
+  }
+  .archive-title {
+    padding: 3rem 3rem 0rem 3rem;
+  }
+  .awards-title {
+    width: 100vw;
+    padding: 0rem 3rem 0rem 3rem;
+  }
+  .award-name,
+  .award-project {
+    width: 100vw;
+    height: 30px;
+    padding: 0 3rem;
+  }
+  .archives-info {
+    top: 21%;
+    right: auto;
+    left: 3rem;
+    transform: translateY(-50%);
+    width: 69vw;
+  }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+
+    /* Kita tumpuk 4 gradien linear untuk efek box yang smooth */
+    background: 
+    /* Bayangan dari ATAS ke bawah */
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 0%, transparent 5%),
+      /* Bayangan dari BAWAH ke atas */
+        linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 5%),
+      /* Bayangan dari KIRI ke kanan */
+        linear-gradient(to right, rgba(0, 0, 0, 0.9) 0%, transparent 5%),
+      /* Bayangan dari KANAN ke kiri */
+        linear-gradient(to left, rgba(0, 0, 0, 0.9) 0%, transparent 5%);
+
+    /* Jurus biar warnanya nggak 'mati' tapi menyatu ke video Three.js */
+    mix-blend-mode: multiply;
+    opacity: 0.85;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 576px) {
+  .header {
+    width: 80%;
+    font-size: 10px;
+  }
+  .archive-title {
+    padding: 5rem 1rem 0rem 2rem;
+  }
+  .archive-title h2 {
+    font-size: 4rem;
+    letter-spacing: -0.2rem;
+  }
+  .archives-info {
+    top: 20%;
+    right: auto;
+    left: 2rem;
+    transform: translateY(-50%);
+    width: 83vw;
+  }
+  .archives-info p {
+    line-height: 1.1;
+  }
+  .awards-title {
+    width: 100vw;
+    padding: 0rem 2rem 0rem 2rem;
+  }
+  .award-name,
+  .award-project {
+    width: 100vw;
+    height: 30px;
+    padding: 0 2rem;
+  }
+  .award-preview {
+    width: 90vw;
+    height: 51vw;
+  }
+
+  .coords,
+  .dot,
+  .crosshair {
+    display: none;
+  }
+}
+
+/* Extra Small Device (rare but safe) */
+@media (max-width: 395px) {
+  .header {
+    width: 90%;
+  }
+  .archive-title h2 {
+    font-size: 3.65rem;
+  }
+}

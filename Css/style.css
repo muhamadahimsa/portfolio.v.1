@@ -1,0 +1,220 @@
+body {
+  font-family: "General";
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none; /* PENTING: Biar lo tetep bisa klik menu/link di bawahnya */
+}
+
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #2c3e3e 0%, #000000 100%);
+}
+.projects {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: 26rem;
+  z-index: 10;
+}
+.project-title {
+  color: var(--primary);
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+.project {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+}
+.project .ofh h1 {
+  position: absolute;
+  top: 0%;
+  height: 63px;
+  width: 100%;
+  font-size: 70px;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: -0.05rem;
+  font-weight: 800;
+  font-family: "General";
+  line-height: 100%;
+  letter-spacing: -0.2rem;
+  transition: color 0.25s;
+  color: var(--primary);
+  pointer-events: none;
+}
+.project .ofh {
+  overflow: hidden;
+  position: relative;
+  height: 63px;
+  width: 100%;
+}
+.project .ofh h1 sup {
+  font-size: 20px;
+  position: absolute;
+  top: -0.95rem;
+  letter-spacing: 0.1rem;
+}
+.project .ofh h1:nth-child(2) {
+  top: 100%;
+}
+.projects:hover .ofh h1:nth-child(1) {
+  color: rgb(111, 111, 111);
+}
+
+/* Container Utama Kubus */
+.view-projects {
+  position: absolute;
+  top: 80%; /* Sedikit lebih bawah agar tidak menabrak list */
+  left: 50%;
+  width: 140px; /* Tentukan lebar tetap */
+  height: 40px;  /* Tentukan tinggi tetap */
+  perspective: 1000px;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  display: none; /* Kita munculkan hanya di mobile lewat JS atau Media Query */
+}
+
+/* Element yang diputar oleh GSAP */
+.view-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s; /* Cadangan jika tidak pakai GSAP, tapi kita pakai GSAP */
+}
+
+.view {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary);
+  color: var(--secpndary); /* Sesuaikan warna teks agar kontras */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  backface-visibility: hidden;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Positioning 4 Sisi Kubus */
+.view:nth-child(1) { transform: rotateX(0deg) translateZ(20px); }    /* Depan */
+.view:nth-child(2) { transform: rotateX(-90deg) translateZ(20px); }  /* Atas */
+.view:nth-child(3) { transform: rotateX(-180deg) translateZ(20px); } /* Belakang */
+.view:nth-child(4) { transform: rotateX(-270deg) translateZ(20px); } /* Bawah */
+
+@media (max-width: 1200px) {
+  .view-projects { display: block; }
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: var(--primary);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  z-index: 1;
+  pointer-events: none;
+}
+.footer-wrapper p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -0.05rem;
+}
+.footer-wrapper:nth-child(2) p:nth-child(1) {
+  opacity: 0.5;
+}
+p.time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 1200px) {
+  .footer-wrapper p {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: -0.05rem;
+  }
+}
+
+/* Tablet Portrait */
+@media (max-width: 992px) {
+}
+
+/* Large Mobile */
+@media (max-width: 768px) {
+  .footer-wrapper p {
+    font-size: 2rem;
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: -0.05rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 576px) {
+  .project-title {
+    font-size: 12px;
+  }
+  .project .ofh h1 {
+    height: 61px;
+    font-size: 60px;
+    line-height: 90%;
+    letter-spacing: -0.2rem;
+  }
+  .project .ofh {
+    height: 61px;
+  }
+  .project .ofh h1 sup {
+    font-size: 20px;
+    top: -0.9rem;
+    letter-spacing: 0.1rem;
+  }
+
+  .footer-wrapper p {
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: -0.05rem;
+  }
+  .footer-wrapper:nth-child(2) {
+    text-align: end;
+  }
+
+  .loader-time{
+    font-size: 8rem;
+    height: 8rem;
+    padding-right: .5rem;
+  }
+}
+
+/* Extra Small Device (rare but safe) */
+@media (max-width: 395px) {
+}

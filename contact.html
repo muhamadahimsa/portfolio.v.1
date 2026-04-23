@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./Css/setting.css" />
+    <link rel="stylesheet" href="./Css/contact.css" />
+    <title>Contact | Muhamad Ahimsa</title>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Transition -->
+    <div class="transition">
+      <div class="transition-row row-1">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+      <div class="transition-row row-2">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+    </div>
+
+    <div class="site-wrapper">
+      <!-- Nav -->
+      <nav class="--magnetic">
+        <div class="nav-btn">
+          <div class="btn-container">
+            <div class="ofh">
+              <span class="btn-text open">Menu</span>
+              <span class="btn-text close">Close</span>
+            </div>
+          </div>
+          <div class="burger-icon">
+            <span class="line top"></span>
+            <span class="line bottom"></span>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <div class="nav-menu-wrapper">
+            <div class="ofh">
+              <a href="./index.html"
+                ><span>(A)</span>
+                <p>Index</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./about.html"
+                ><span>(B)</span>
+                <p>About</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./archives.html"
+                ><span>(C)</span>
+                <p>Archives</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./contact.html"
+                ><span>(D)</span>
+                <p>Contact</p></a
+              >
+            </div>
+          </div>
+          <div class="nav-menu-footer">
+            <div class="nav-menu-footer-wrapper">
+              <div class="ofh"><p>Muhamad Ahimsa</p></div>
+              <div class="ofh"><p>All Rights Reserved</p></div>
+            </div>
+            <div class="ofh"><p>Made with Anxiety</p></div>
+          </div>
+        </div>
+      </nav>
+
+      <section class="contact-visual">
+        <div class="contact-icon">
+        </div>
+      </section>
+
+      <section class="contact-info">
+        <div class="contact-info-row">
+          <p>Muhamad</p>
+          <p>Ahimsa</p>
+        </div>
+        <div class="contact-info-row">
+          <p>Designer</p>
+          <p>Developer</p>
+        </div>
+        <a href="https://dribbble.com/ahimson2" class="contact-info-row --link">
+          <p>Dribble</p>
+          <p>Ahim Studio</p>
+          <div class="link-bg"></div>
+        </a>
+        <a href="https://www.behance.net/ahimsa21" class="contact-info-row --link">
+          <p>Behance</p>
+          <p>Ahim Studio</p>
+          <div class="link-bg"></div>
+        </a>
+        <a href="https://www.instagram.com/ahim_studio/" class="contact-info-row --link">
+          <p>Instagram</p>
+          <p>@ahimstudio</p>
+          <div class="link-bg"></div>
+        </a>
+        <a href="mailto:ahimson2@gmail.com" class="contact-info-row --link">
+          <p>General Inquiries</p>
+          <p>helloahim@gmail.com</p>
+          <div class="link-bg"></div>
+        </a>
+        <div class="contact-info-row">
+          <p>Current Time</p>
+          <p class="current-time">00:00:00 (WIB)</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- SCRIPT -->
+    <script type="module" src="./Javascript/nav.js"></script>
+    <script type="module" src="./Javascript/transition.js"></script>
+    <script type="module" src="./Javascript/contact.js"></script>
+  </body>
+</html>

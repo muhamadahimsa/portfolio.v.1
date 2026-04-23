@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./Css/setting.css" />
+    <link rel="stylesheet" href="./Css/about.css" />
+    <title>About | Muhamad Ahimsa</title>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Transition -->
+    <div class="transition">
+      <div class="transition-row row-1">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+      <div class="transition-row row-2">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+      </div>
+    </div>
+
+    <!-- Home -->
+    <div class="site-wrapper">
+      <!-- Nav -->
+      <nav class="--magnetic">
+        <div class="nav-btn">
+          <div class="btn-container">
+            <div class="ofh">
+              <span class="btn-text open">Menu</span>
+              <span class="btn-text close">Close</span>
+            </div>
+          </div>
+          <div class="burger-icon">
+            <span class="line top"></span>
+            <span class="line bottom"></span>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <div class="nav-menu-wrapper">
+            <div class="ofh">
+              <a href="./index.html"
+                ><span>(A)</span>
+                <p>Index</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./about.html"
+                ><span>(B)</span>
+                <p>About</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./archives.html"
+                ><span>(C)</span>
+                <p>Archives</p></a
+              >
+            </div>
+            <div class="ofh">
+              <a href="./contact.html"
+                ><span>(D)</span>
+                <p>Contact</p></a
+              >
+            </div>
+          </div>
+          <div class="nav-menu-footer">
+            <div class="nav-menu-footer-wrapper">
+              <div class="ofh"><p>Muhamad Ahimsa</p></div>
+              <div class="ofh"><p>All Rights Reserved</p></div>
+            </div>
+            <div class="ofh"><p>Made with Anxiety</p></div>
+          </div>
+        </div>
+      </nav>
+
+      <div id="imageContainer">
+        <img id="myImage" src="./Asset/Images/about/hero.webp" />
+      </div>
+      <div class="crosshair">
+        <div class="line horizontal"></div>
+        <div class="line vertical"></div>
+      </div>
+      <div class="dot">
+        <span id="coordY">0</span>
+        <span id="coordX">0</span>
+      </div>
+      <div class="info-btn">
+        <div class="--button">
+          <div class="btn-wrapper"
+            ><div class="btn-container">
+              <span class="btn-text">Info</span>
+              <div class="plus"></div></div
+          ></div>
+        </div>
+      </div>
+      <div class="hero-top">
+        <h1>Muhamad Ahimsa</h1>
+        <h1>Designer & Developer</h1>
+      </div>
+      <div class="hero-bottom">
+        <h1>every difficulty there must be ease</h1>
+      </div>
+    </div>
+
+    <div class="infos" data-lenis-prevent>
+      <div class="info-wrapper">
+        <div class="info-text">
+          <p class="info-title">Info</p>
+          <p>
+            I’m Muhamad Ahimsa, a creative hybrid focused on building digital spaces that move. Transitioning from graphic design to web development has allowed me to treat the browser as a canvas for interaction. I don't just build websites; I engineer experiences. By leveraging my design roots and front-end skills, I strive to create high-fidelity interfaces where every pixel serves a purpose and every motion tells a story.
+          </p>
+        </div>
+        <div class="info-text">
+          <p class="info-title">Services</p>
+          <p>
+            Web Design / Web Development / UI Animation / UI Interaction /
+            Visual Identity / 3D
+          </p>
+        </div>
+        <div class="info-text">
+          <p class="info-title">Technologies</p>
+          <p>Javascript / GSAP / Threejs / Figma / Blender / Photoshop</p>
+        </div>
+        <div class="info-close">
+          <p>Close</p>
+        </div>
+      </div>
+
+      <div class="info-separator"></div>
+
+      <div class="info-bg"></div>
+      <div class="info-background"></div>
+    </div>
+
+    <script type="module" src="./Javascript/transition.js"></script>
+    <script type="module" src="./Javascript/nav.js"></script>
+    <script type="module" src="./Javascript/about.js"></script>
+  </body>
+</html>

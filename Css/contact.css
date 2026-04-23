@@ -1,0 +1,135 @@
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  background-color: var(--secondary);
+  font-family: 'General';
+  color: var(--primary);
+}
+
+canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.site-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  height: 100%;
+}
+
+section.contact-visual{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  z-index: 11; 
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+.contact-visual .contact-icon{
+  position: relative;
+  width: 8rem;
+  height: 8rem;
+}
+.contact-info{
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 10;
+  pointer-events: none;
+  background: transparent !important;
+}
+.contact-info-row{
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  will-change: gap, opacity, filter;
+}
+.contact-info .contact-info-row p{
+  flex: 1;
+}
+.contact-info .contact-info-row p:nth-child(1){
+  text-align: right;
+}
+.contact-info-row p:nth-child(2) {
+  font-family: "Instrument Serif", serif;
+  text-transform: none;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: .01rem;
+}
+.contact-info-row p {
+  text-transform: uppercase;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -.075rem;
+  line-height: 1.8;
+  color: var(--primary);
+  position: relative;
+  z-index: 1;
+}
+a.contact-info-row p{
+  pointer-events: auto;
+}
+.link-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--blue);
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
+  will-change: clip-path;
+}
+
+nav .nav-menu {
+  color: var(--secondary);
+}
+/* Pastikan elemen magnetic punya transisi halus saat kembali ke posisi awal */
+.magnetic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform;
+}
+
+/* Laptop & Tablet Landscape */
+@media (max-width: 1200px) {}
+
+/* Large Mobile */
+@media (max-width: 768px){
+  .contact-info-row p{
+    font-size: 1.5rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 576px) {
+  .contact-info-row p{
+    font-size: 1rem;
+  }
+}
+@media (max-width: 395px){
+  .hero-link h1{
+    font-size: 1.75rem;
+    letter-spacing: 0;
+  }
+  .hero-links a{
+    font-size: 11px;
+  }
+}

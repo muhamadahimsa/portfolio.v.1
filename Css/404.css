@@ -1,0 +1,126 @@
+body {
+  overflow: hidden;
+  width: 100vw;
+  height: 100%;
+
+  background-color: #c4c4c4;
+  font-family: "General";
+  color: var(--secondary);
+}
+
+.site-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  height: 100%;
+  display: flex;
+}
+
+/* Hero */
+canvas {
+  display: block;
+}
+#container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+.hero {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: 51vw;
+  text-align: justify;
+  z-index: 10;
+}
+.hero h1 {
+  text-transform: uppercase;
+  font-size: 2rem;
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+  line-height: 1.05;
+  letter-spacing: -.04rem;
+  pointer-events: none;
+}
+
+.info-btn {
+  position: fixed;
+  top: 75%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+.--button .btn-wrapper {
+  display: block;
+  background: var(--white);
+  color: var(--secondary);
+  width: fit-content;
+  padding: 1rem 2rem;
+  text-transform: uppercase;
+  text-decoration: none;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+.btn-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.--button .btn-wrapper,
+.btn-text {
+  will-change: transform;
+}
+.info-btn .--button .btn-wrapper {
+  background: var(--white);
+  color: var(--secondary);
+}
+.info-btn .--button .btn-wrapper .btn-container {
+  display: flex;
+  gap: 2rem;
+}
+.info-btn .--button .btn-text {
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.3s ease-out;
+}
+
+@media (max-width: 1200px){
+  .hero{
+    width: 85vw;
+  }
+}
+
+@media (max-width: 768px){
+  .hero{
+    width: 85vw;
+  }
+  .hero h1{
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 576px){
+  .hero{
+    width: 70vw;
+  }
+  .hero h1{
+    font-size: 1.25rem;
+    line-height: 1.1;
+  }
+  .info-btn{
+    top: 80%;
+  }
+}
+@media (max-width: 391px){
+  .hero h1{
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+}
