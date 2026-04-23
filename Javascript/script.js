@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const textureLoader = new THREE.TextureLoader(loadingManager); // Added manager
   const textureCache = {};
 
-  const defaultDisplayImg = "/Asset/Images/brutalist.webp";
+  const defaultDisplayImg = "./Asset/Images/brutalist.webp";
 
   function loadTexture(src) {
     if (textureCache[src]) return textureCache[src];
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loader = new GLTFLoader(loadingManager); // Added manager
   loader.setMeshoptDecoder(MeshoptDecoder);
 
-  loader.load("/Asset/3D/monitors.glb", (gltf) => {
+  loader.load("./Asset/3D/monitors.glb", (gltf) => {
     const model = gltf.scene;
     model.scale.set(1.5, 1.5, 1.5);
     model.position.y = -0.8;
