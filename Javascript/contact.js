@@ -8,16 +8,22 @@ import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTr
 // --- INITIALIZATION ---
 gsap.registerPlugin(ScrollTrigger);
 
+// 1. UPDATE INITIALIZATION
 const lenis = new Lenis({
   infinite: true,
   smoothWheel: true,
-  // INI KUNCINYA:
-  smoothTouch: true, // Aktifkan smooth scroll untuk sentuhan jari
-  touchMultiplier: 1.5, // Biar gak kerasa berat pas di-swipe
-  lerp: 0.1, // Nilai kehalusan (0.1 biasanya paling pas buat mobile)
+  smoothTouch: true, 
+  touchMultiplier: 1.2, // Jangan terlalu tinggi biar gak liar
+  lerp: 0.1,
 });
+
+// Sync dengan ScrollTrigger
 lenis.on("scroll", ScrollTrigger.update);
-gsap.ticker.add((time) => lenis.raf(time * 1000));
+
+// Pastikan ticker jalan terus
+gsap.ticker.add((time) => {
+  lenis.raf(time * 1000);
+});
 gsap.ticker.lagSmoothing(0);
 
 // --- RESPONSIVE CONFIG ---
@@ -64,21 +70,37 @@ updateResponsiveConfig();
 
 // --- GSAP & SCROLL LOGIC ---
 const contactInfo = document.querySelector(".contact-info");
+const parent = contactInfo.parentElement;
 
-for (let i = 0; i < 10; i++) {
+// 1. GABUNG LOGIC CLONING (Cukup sekali jalan)
+// Kita bersihkan dulu atau langsung proses satu blok utama
+// Clone ke BAWAH (untuk infinite ke bawah)
+for (let i = 0; i < 6; i++) {
   const clone = contactInfo.cloneNode(true);
-  contactInfo.parentElement.appendChild(clone);
+  parent.appendChild(clone);
 }
 
+// Clone ke ATAS (untuk infinite ke atas)
+for (let i = 0; i < 3; i++) {
+  const clone = contactInfo.cloneNode(true);
+  parent.prepend(clone);
+}
+
+// 2. AMBIL SEMUA ROW SETELAH CLONING SELESAI
+// Pakai querySelectorAll DI SINI, jangan di atas
 const contactRows = document.querySelectorAll(".contact-info-row");
 
+// 3. SET START POSITION
+// Paksa scroll sedikit ke bawah supaya engine infinite punya "nafas" buat scroll up
+window.scrollTo(0, window.innerHeight);
+
+// 4. JALANKAN GSAP LOOP
 contactRows.forEach((row) => {
   gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
 
   ScrollTrigger.create({
     trigger: row,
-    // --- SEKARANG DINAMIS ---
-    start: () => responsiveConfig.startPos, // Pakai fungsi () => supaya nilainya selalu fresh
+    start: () => responsiveConfig.startPos,
     end: () => responsiveConfig.endPos,
     scrub: true,
     onUpdate: (self) => {
@@ -90,12 +112,13 @@ contactRows.forEach((row) => {
       row.style.opacity = 0.4 + 0.6 * sharpCurve;
       row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
     },
-    onLeave: () =>
-      gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-    onLeaveBack: () =>
-      gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+    onLeave: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+    onLeaveBack: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
   });
 });
+
+// Refresh total
+ScrollTrigger.refresh();
 
 // --- MODEL SWITCHING LOGIC ---
 let lastCenteredRow = null;
