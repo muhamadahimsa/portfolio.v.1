@@ -26,6 +26,10 @@
   --grid-line: #3a3a3a;
   --slider-height: 40rem;
 }
+body{
+  touch-action: pan-y;
+  overscroll-behavior-y: none;
+}
 img,
 video {
   width: 100%;

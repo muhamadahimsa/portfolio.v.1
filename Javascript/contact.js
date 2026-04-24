@@ -8,9 +8,17 @@ import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTr
 // --- INITIALIZATION ---
 gsap.registerPlugin(ScrollTrigger);
 
-const lenis = new Lenis({ infinite: true });
+const lenis = new Lenis({
+  infinite: true,
+  smoothWheel: true,
+  // INI KUNCINYA:
+  smoothTouch: true, // Aktifkan smooth scroll untuk sentuhan jari
+  touchMultiplier: 1.5, // Biar gak kerasa berat pas di-swipe
+  lerp: 0.1, // Nilai kehalusan (0.1 biasanya paling pas buat mobile)
+});
 lenis.on("scroll", ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
 
 // --- RESPONSIVE CONFIG ---
 let responsiveConfig = {
