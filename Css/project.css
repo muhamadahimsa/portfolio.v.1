@@ -452,7 +452,7 @@ section {
 
 .left-panel-close {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 2rem);
+  top: calc(2rem + env(safe-area-inset-top));
   right: 2rem;
   width: 2rem;
   height: 2rem;
@@ -684,7 +684,7 @@ nav .nav-menu {
   }
 
   .project-preview {
-    min-width: 15rem;
+    min-width: 1%;
     min-height: 7.5rem;
     width: 90vw;
     height: 23.75vh;
