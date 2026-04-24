@@ -687,18 +687,15 @@ nav .nav-menu {
     min-width: 15rem;
     min-height: 7.5rem;
     width: 90vw;
-    height: 23.75vh;
+    height: 24vh;
   }
   .previews {
     width: 90vw;
-    height: 23.75vh;
+    height: 24vh;
   }
   .modal-video-container {
     width: 90vw;
     height: 23.75vh;
-  }
-  .modal-gallery-container{
-    padding: 20vh 2.5vw;
   }
 }
 
