@@ -1,14 +1,13 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.module.js";
-import Lenis from 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm';
-import gsap from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
-import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm';
+import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
+import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
+import { ScrollTrigger } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm";
 
 // --- INITIALIZATION ---
 gsap.registerPlugin(ScrollTrigger);
 
-// 1. Inisialisasi Awal
 const lenis = new Lenis({
   infinite: true,
   smoothWheel: true,
@@ -17,52 +16,47 @@ const lenis = new Lenis({
   lerp: 0.1,
 });
 
-// Sync & Ticker (Cukup sekali saja)
-lenis.on('scroll', ScrollTrigger.update);
+lenis.on("scroll", ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
 
-// 2. Cloning Logic
+// --- CLONING LOGIC ---
 const contactInfo = document.querySelector(".contact-info");
 const parent = contactInfo.parentElement;
 const isMobile = window.innerWidth < 768;
-const cloneCount = isMobile ? 8 : 4; 
+const cloneCount = isMobile ? 12 : 6; // Mobile butuh lebih panjang
 
 for (let i = 0; i < cloneCount; i++) {
   parent.appendChild(contactInfo.cloneNode(true));
 }
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 4; i++) {
   parent.prepend(contactInfo.cloneNode(true));
 }
 
-// 3. Eksekusi Animasi & Sinkronisasi (SETELAH DOM SIAP)
-setTimeout(() => {
-  // Matikan sebentar infinite-nya pas mau pindah posisi awal (biar nggak jumping)
-  lenis.options.infinite = false;
+// Global variable biar bisa diakses di semua logic
+let allContactRows = [];
 
-  // Pindahkan posisi ke tengah rel (sekitar 1/3 atau 1/2 total scroll)
+// --- EKSEKUSI SETELAH DOM SIAP ---
+setTimeout(() => {
+  lenis.options.infinite = false;
   const middle = document.body.scrollHeight / 3;
   window.scrollTo(0, middle);
-  
-  // Aktifkan kembali dan hitung ulang dimensi
+
   lenis.options.infinite = true;
   lenis.resize();
 
-  // 3. AMBIL SEMUA ROW (Termasuk hasil clone)
-  const contactRows = document.querySelectorAll(".contact-info-row");
-  
-  contactRows.forEach((row) => {
-    // Initial State
+  // AMBIL SEMUA ROW SETELAH CLONING (PENTING!)
+  allContactRows = document.querySelectorAll(".contact-info-row");
+
+  allContactRows.forEach((row) => {
     gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
 
     ScrollTrigger.create({
       trigger: row,
-      // Gunakan fungsi () => agar responsiveConfig tetap dinamis saat resize
       start: () => responsiveConfig.startPos,
       end: () => responsiveConfig.endPos,
       scrub: true,
       onUpdate: (self) => {
-        // Animasi Gap & Blur berdasarkan progress scroll
         const curve = Math.sin(self.progress * Math.PI);
         const gap = 1 + (responsiveConfig.maxGap - 1) * curve;
         row.style.gap = `${gap}rem`;
@@ -71,35 +65,63 @@ setTimeout(() => {
         row.style.opacity = 0.4 + 0.6 * sharpCurve;
         row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
       },
-      // Reset state kalau elemen keluar dari viewport
-      onLeave: () => 
+      onLeave: () =>
         gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-      onLeaveBack: () => 
+      onLeaveBack: () =>
         gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
     });
   });
 
-  // Refresh total ScrollTrigger agar kalkulasi 'start' & 'end' akurat
   ScrollTrigger.refresh();
-  
-  console.log("Lenis Infinite Re-initialized with", contactRows.length, "rows.");
-}, 500);
+}, 600);
 
-const contactRows = document.querySelectorAll(".contact-info-row");
+// --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
+let lastCenteredRow = null;
+let currentModelIndex = 0;
+
+lenis.on("scroll", () => {
+  // Gunakan allContactRows yang sudah di-update di setTimeout
+  if (!allContactRows.length) return;
+
+  const viewportCenter = window.innerHeight / 2;
+  let closestRow = null;
+  let minDistance = Infinity;
+
+  allContactRows.forEach((row) => {
+    const rect = row.getBoundingClientRect();
+    const rowMid = rect.top + rect.height / 2;
+    const distance = Math.abs(rowMid - viewportCenter);
+
+    if (distance < minDistance && distance < 25) {
+      // Toleransi lebih besar buat mobile
+      minDistance = distance;
+      closestRow = row;
+    }
+  });
+
+  if (closestRow && closestRow !== lastCenteredRow) {
+    lastCenteredRow = closestRow;
+    const nextIndex = (currentModelIndex + 1) % 7;
+    models.forEach((m, idx) => {
+      if (m) m.visible = idx === nextIndex;
+    });
+    currentModelIndex = nextIndex;
+  }
+});
 
 // --- RESPONSIVE CONFIG ---
 let responsiveConfig = {
   modelScale: 0.75,
   maxGap: 14,
   startPos: "center 70%",
-  endPos: "center 30%"
+  endPos: "center 30%",
 };
 
 function updateResponsiveConfig() {
   const width = window.innerWidth;
   // Gunakan referensi base width (misal 1920 untuk desktop)
-  const baseWidth = 1920; 
-  
+  const baseWidth = 1920;
+
   if (width < 576) {
     responsiveConfig.modelScale = 0.25;
     responsiveConfig.maxGap = 6;
@@ -119,7 +141,7 @@ function updateResponsiveConfig() {
     // Untuk desktop, kita kunci skalanya agar tidak meledak saat fullscreen
     // Kita kalikan dengan rasio lebar saat ini dibanding lebar standar
     const desktopBaseScale = 0.75;
-    responsiveConfig.modelScale = desktopBaseScale; 
+    responsiveConfig.modelScale = desktopBaseScale;
     responsiveConfig.maxGap = 16;
     responsiveConfig.startPos = "center 70%";
     responsiveConfig.endPos = "center 30%";
@@ -128,42 +150,6 @@ function updateResponsiveConfig() {
 
 // Jalankan pertama kali
 updateResponsiveConfig();
-
-// --- MODEL SWITCHING LOGIC ---
-let lastCenteredRow = null;
-let currentModelIndex = 0;
-let isSwitching = false;
-
-lenis.on("scroll", () => {
-  if (isSwitching) return;
-  const viewportCenter = window.innerHeight / 2;
-  let closestRow = null;
-  let minDistance = Infinity;
-
-  contactRows.forEach((row) => {
-    const rect = row.getBoundingClientRect();
-    const rowMid = rect.top + rect.height / 2;
-    const distance = Math.abs(rowMid - viewportCenter);
-
-    if (distance < minDistance && distance < 15) {
-      minDistance = distance;
-      closestRow = row;
-    }
-  });
-
-  if (closestRow && closestRow !== lastCenteredRow) {
-    lastCenteredRow = closestRow;
-
-    // Ganti Model di balik Glitch
-    const nextIndex = (currentModelIndex + 1) % 7;
-
-    models.forEach((m, idx) => {
-      if (m) m.visible = idx === nextIndex;
-    });
-
-    currentModelIndex = nextIndex;
-  }
-});
 
 // --- UTILITIES (Clock & Links) ---
 function updateClock() {
@@ -232,60 +218,57 @@ function loadModels() {
   loader.setMeshoptDecoder(MeshoptDecoder);
 
   for (let i = 1; i <= 7; i++) {
-    loader.load(
-      `./models/${i}/scene-opt.glb`,
-      (gltf) => {
-        const model = gltf.scene;
+    loader.load(`./models/${i}/scene-opt.glb`, (gltf) => {
+      const model = gltf.scene;
 
-        // 1. RESET ORIENTASI & SCALE BAWAAN
-        model.updateMatrixWorld();
+      // 1. RESET ORIENTASI & SCALE BAWAAN
+      model.updateMatrixWorld();
 
-        // 2. HITUNG BOX SETELAH RESET
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
+      // 2. HITUNG BOX SETELAH RESET
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
 
-        const maxDim = Math.max(size.x, size.y, size.z);
+      const maxDim = Math.max(size.x, size.y, size.z);
 
-        // --- PENGGUNAAN CONFIG RESPONSIVE ---
-        // Menggunakan responsiveConfig.modelScale yang sudah diupdate di window resize
-        const scaleFactor = responsiveConfig.modelScale / maxDim;
-        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+      // --- PENGGUNAAN CONFIG RESPONSIVE ---
+      // Menggunakan responsiveConfig.modelScale yang sudah diupdate di window resize
+      const scaleFactor = responsiveConfig.modelScale / maxDim;
+      model.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-        // 3. TENGALKAN POSISI (Centering)
-        model.position.x = -center.x * scaleFactor;
-        model.position.y = -center.y * scaleFactor;
-        model.position.z = -center.z * scaleFactor;
+      // 3. TENGALKAN POSISI (Centering)
+      model.position.x = -center.x * scaleFactor;
+      model.position.y = -center.y * scaleFactor;
+      model.position.z = -center.z * scaleFactor;
 
-        // 4. BUNGKUS KE GROUP
-        const wrapper = new THREE.Group();
-        wrapper.add(model);
+      // 4. BUNGKUS KE GROUP
+      const wrapper = new THREE.Group();
+      wrapper.add(model);
 
-        // --- FINE TUNING MANUAL (Tetap proporsional terhadap scaleFactor) ---
-        if (i === 1) {
-          model.scale.multiplyScalar(1.1); 
-        }
-        if (i === 2) {
-          model.scale.multiplyScalar(0.7);
-        }
-        if (i === 3) {
-          model.scale.multiplyScalar(0.8);
-        }
-        if (i === 5) {
-          model.scale.multiplyScalar(0.9);
-        }
-        if (i === 6) {
-          model.scale.multiplyScalar(0.8);
-        }
-        if (i === 7) {
-          model.scale.multiplyScalar(0.7); 
-        }
+      // --- FINE TUNING MANUAL (Tetap proporsional terhadap scaleFactor) ---
+      if (i === 1) {
+        model.scale.multiplyScalar(1.1);
+      }
+      if (i === 2) {
+        model.scale.multiplyScalar(0.7);
+      }
+      if (i === 3) {
+        model.scale.multiplyScalar(0.8);
+      }
+      if (i === 5) {
+        model.scale.multiplyScalar(0.9);
+      }
+      if (i === 6) {
+        model.scale.multiplyScalar(0.8);
+      }
+      if (i === 7) {
+        model.scale.multiplyScalar(0.7);
+      }
 
-        wrapper.visible = i === 1;
-        scene.add(wrapper);
-        models[i - 1] = wrapper;
-      },
-    );
+      wrapper.visible = i === 1;
+      scene.add(wrapper);
+      models[i - 1] = wrapper;
+    });
   }
 }
 
@@ -332,28 +315,28 @@ window.addEventListener("resize", () => {
   models.forEach((wrapper, idx) => {
     if (wrapper) {
       const model = wrapper.children[0];
-      
+
       // 1. Paksa update matrix biar kalkulasi box akurat
       model.updateMatrixWorld(true);
-      
+
       // 2. Hitung Bounding Box sebelum kita ubah skalanya (asli)
       // Kita pakai helper box3
       const box = new THREE.Box3().setFromObject(model);
       const size = new THREE.Vector3();
       box.getSize(size);
-      
+
       // 3. Kembalikan ukuran ke dimensi asli (normalized)
       // Kita hitung maxDim asli sebelum kena scale sekarang
-      const currentScale = model.scale.x; 
+      const currentScale = model.scale.x;
       const originalMaxDim = Math.max(size.x, size.y, size.z) / currentScale;
-      
+
       // 4. Hitung Skala Baru
       let finalScale = responsiveConfig.modelScale / originalMaxDim;
 
       // Logic Fullscreen/Ultrawide lo
       if (width > 1600) {
-          const factor = 1600 / width; 
-          finalScale *= Math.max(factor, 0.85);
+        const factor = 1600 / width;
+        finalScale *= Math.max(factor, 0.85);
       }
 
       // 5. Terapkan Skala Baru & Multiplier Manual
@@ -362,7 +345,7 @@ window.addEventListener("resize", () => {
       model.scale.setScalar(scaledFinal);
 
       // 6. UPDATE CENTERING (Ini kuncinya)
-      // Kita hitung ulang center dari object aslinya 
+      // Kita hitung ulang center dari object aslinya
       // lalu geser posisi model supaya pivot wrapper tetap di tengah model
       const newBox = new THREE.Box3().setFromObject(model);
       const newCenter = new THREE.Vector3();
