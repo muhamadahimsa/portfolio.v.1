@@ -452,7 +452,7 @@ section {
 
 .left-panel-close {
   position: absolute;
-  top: calc(2rem + env(safe-area-inset-top));
+  top: calc(4rem + env(safe-area-inset-top));
   right: 2rem;
   width: 2rem;
   height: 2rem;
@@ -684,7 +684,7 @@ nav .nav-menu {
   }
 
   .project-preview {
-    min-width: 1%;
+    min-width: 15rem;
     min-height: 7.5rem;
     width: 90vw;
     height: 23.75vh;
@@ -696,6 +696,9 @@ nav .nav-menu {
   .modal-video-container {
     width: 90vw;
     height: 23.75vh;
+  }
+  .modal-gallery-container{
+    padding: 20vh 2.5vw;
   }
 }
 
