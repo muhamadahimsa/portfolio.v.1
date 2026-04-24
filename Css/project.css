@@ -680,7 +680,7 @@ nav .nav-menu {
 
   .nav-mobile {
     width: 75vw;
-    bottom: calc(2rem + env(safe-area-inset-bottom));
+    bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 
   .project-preview {
