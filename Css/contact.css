@@ -50,7 +50,6 @@ section.contact-visual{
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow: hidden;
   z-index: 10;
   pointer-events: auto;
   background: transparent !important;
@@ -63,8 +62,9 @@ section.contact-visual{
   will-change: gap, opacity, filter;
   pointer-events: none;
 }
-.contact-info-row.--link {
-  pointer-events: auto;
+.contact-info-row.--link,
+.contact-info-row.--link p {
+  pointer-events: auto !important;
 }
 .contact-info .contact-info-row p{
   flex: 1;

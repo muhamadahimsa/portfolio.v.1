@@ -37,24 +37,32 @@ for (let i = 0; i < 3; i++) {
 
 // 3. Eksekusi Animasi & Sinkronisasi (SETELAH DOM SIAP)
 setTimeout(() => {
-  // Pindahkan posisi ke tengah rel
+  // Matikan sebentar infinite-nya pas mau pindah posisi awal (biar nggak jumping)
+  lenis.options.infinite = false;
+
+  // Pindahkan posisi ke tengah rel (sekitar 1/3 atau 1/2 total scroll)
   const middle = document.body.scrollHeight / 3;
   window.scrollTo(0, middle);
   
+  // Aktifkan kembali dan hitung ulang dimensi
+  lenis.options.infinite = true;
   lenis.resize();
 
-  // AMBIL ROW DI SINI (Supaya clone-nya ikut terhitung)
+  // 3. AMBIL SEMUA ROW (Termasuk hasil clone)
   const contactRows = document.querySelectorAll(".contact-info-row");
   
   contactRows.forEach((row) => {
+    // Initial State
     gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
 
     ScrollTrigger.create({
       trigger: row,
+      // Gunakan fungsi () => agar responsiveConfig tetap dinamis saat resize
       start: () => responsiveConfig.startPos,
       end: () => responsiveConfig.endPos,
       scrub: true,
       onUpdate: (self) => {
+        // Animasi Gap & Blur berdasarkan progress scroll
         const curve = Math.sin(self.progress * Math.PI);
         const gap = 1 + (responsiveConfig.maxGap - 1) * curve;
         row.style.gap = `${gap}rem`;
@@ -63,13 +71,19 @@ setTimeout(() => {
         row.style.opacity = 0.4 + 0.6 * sharpCurve;
         row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
       },
-      onLeave: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-      onLeaveBack: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+      // Reset state kalau elemen keluar dari viewport
+      onLeave: () => 
+        gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+      onLeaveBack: () => 
+        gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
     });
   });
 
+  // Refresh total ScrollTrigger agar kalkulasi 'start' & 'end' akurat
   ScrollTrigger.refresh();
-}, 300); // Kasih waktu sedikit lebih lama biar mobile nggak kaget
+  
+  console.log("Lenis Infinite Re-initialized with", contactRows.length, "rows.");
+}, 500);
 
 const contactRows = document.querySelectorAll(".contact-info-row");
 
