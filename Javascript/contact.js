@@ -72,16 +72,17 @@ updateResponsiveConfig();
 const contactInfo = document.querySelector(".contact-info");
 const parent = contactInfo.parentElement;
 
-// 1. GABUNG LOGIC CLONING (Cukup sekali jalan)
-// Kita bersihkan dulu atau langsung proses satu blok utama
-// Clone ke BAWAH (untuk infinite ke bawah)
-for (let i = 0; i < 6; i++) {
+// Kita cek, kalau mobile kita hajar clone lebih banyak
+const isMobile = window.innerWidth < 768;
+const cloneCount = isMobile ? 12 : 6; // Mobile butuh lebih banyak biar panjang banget
+
+for (let i = 0; i < cloneCount; i++) {
   const clone = contactInfo.cloneNode(true);
   parent.appendChild(clone);
 }
 
-// Clone ke ATAS (untuk infinite ke atas)
-for (let i = 0; i < 3; i++) {
+// Prepend juga tambahin dikit buat nafas scroll up
+for (let i = 0; i < 4; i++) {
   const clone = contactInfo.cloneNode(true);
   parent.prepend(clone);
 }
