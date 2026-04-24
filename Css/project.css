@@ -452,7 +452,7 @@ section {
 
 .left-panel-close {
   position: absolute;
-  top: calc(3rem + env(safe-area-inset-top));
+  top: 2rem;
   right: 2rem;
   width: 2rem;
   height: 2rem;
