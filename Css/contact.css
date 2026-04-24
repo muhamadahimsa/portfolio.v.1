@@ -46,14 +46,13 @@ section.contact-visual{
 .contact-info{
   position: relative;
   width: 100%;
-  min-height: 100vh;
   height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
   z-index: 10;
-  pointer-events: none;
+  pointer-events: auto;
   background: transparent !important;
 }
 .contact-info-row{
@@ -62,6 +61,10 @@ section.contact-visual{
   justify-content: center;
   gap: 1rem;
   will-change: gap, opacity, filter;
+  pointer-events: none;
+}
+.contact-info-row.--link {
+  pointer-events: auto;
 }
 .contact-info .contact-info-row p{
   flex: 1;

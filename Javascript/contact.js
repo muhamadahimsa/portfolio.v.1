@@ -8,30 +8,70 @@ import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTr
 // --- INITIALIZATION ---
 gsap.registerPlugin(ScrollTrigger);
 
-// --- INITIALIZATION ---
+// 1. Inisialisasi Awal
 const lenis = new Lenis({
-  content: document.querySelector('#scroll-content'), // Kasih tahu konten utamanya
   infinite: true,
   smoothWheel: true,
-  smoothTouch: true, 
-  touchMultiplier: 1.5,
+  smoothTouch: true,
+  touchMultiplier: 1.2,
   lerp: 0.1,
 });
 
-// Refresh hitungan setiap kali ada perubahan DOM (Cloning)
-function refreshLenis() {
-  lenis.resize();
-  ScrollTrigger.refresh();
+// Sync & Ticker (Cukup sekali saja)
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+// 2. Cloning Logic
+const contactInfo = document.querySelector(".contact-info");
+const parent = contactInfo.parentElement;
+const isMobile = window.innerWidth < 768;
+const cloneCount = isMobile ? 8 : 4; 
+
+for (let i = 0; i < cloneCount; i++) {
+  parent.appendChild(contactInfo.cloneNode(true));
+}
+for (let i = 0; i < 3; i++) {
+  parent.prepend(contactInfo.cloneNode(true));
 }
 
-// Sync dengan ScrollTrigger
-lenis.on("scroll", ScrollTrigger.update);
+// 3. Eksekusi Animasi & Sinkronisasi (SETELAH DOM SIAP)
+setTimeout(() => {
+  // Pindahkan posisi ke tengah rel
+  const middle = document.body.scrollHeight / 3;
+  window.scrollTo(0, middle);
+  
+  lenis.resize();
 
-// Pastikan ticker jalan terus
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000);
-});
-gsap.ticker.lagSmoothing(0);
+  // AMBIL ROW DI SINI (Supaya clone-nya ikut terhitung)
+  const contactRows = document.querySelectorAll(".contact-info-row");
+  
+  contactRows.forEach((row) => {
+    gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
+
+    ScrollTrigger.create({
+      trigger: row,
+      start: () => responsiveConfig.startPos,
+      end: () => responsiveConfig.endPos,
+      scrub: true,
+      onUpdate: (self) => {
+        const curve = Math.sin(self.progress * Math.PI);
+        const gap = 1 + (responsiveConfig.maxGap - 1) * curve;
+        row.style.gap = `${gap}rem`;
+
+        const sharpCurve = Math.pow(curve, 4);
+        row.style.opacity = 0.4 + 0.6 * sharpCurve;
+        row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
+      },
+      onLeave: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+      onLeaveBack: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
+    });
+  });
+
+  ScrollTrigger.refresh();
+}, 300); // Kasih waktu sedikit lebih lama biar mobile nggak kaget
+
+const contactRows = document.querySelectorAll(".contact-info-row");
 
 // --- RESPONSIVE CONFIG ---
 let responsiveConfig = {
@@ -74,63 +114,6 @@ function updateResponsiveConfig() {
 
 // Jalankan pertama kali
 updateResponsiveConfig();
-
-// --- GSAP & SCROLL LOGIC ---
-const contactInfo = document.querySelector(".contact-info");
-const parent = contactInfo.parentElement;
-
-const isMobile = window.innerWidth < 768;
-const cloneCount = isMobile ? 12 : 6; 
-
-for (let i = 0; i < cloneCount; i++) {
-  const clone = contactInfo.cloneNode(true);
-  parent.appendChild(clone);
-}
-
-for (let i = 0; i < 4; i++) {
-  const clone = contactInfo.cloneNode(true);
-  parent.prepend(clone);
-}
-
-// CRITICAL: Kasih jeda dikit biar browser selesai render clone sebelum dihitung Lenis
-setTimeout(() => {
-  window.scrollTo(0, window.innerHeight);
-  refreshLenis();
-}, 100);
-
-// 2. AMBIL SEMUA ROW SETELAH CLONING SELESAI
-// Pakai querySelectorAll DI SINI, jangan di atas
-const contactRows = document.querySelectorAll(".contact-info-row");
-
-// 3. SET START POSITION
-// Paksa scroll sedikit ke bawah supaya engine infinite punya "nafas" buat scroll up
-window.scrollTo(0, window.innerHeight);
-
-// 4. JALANKAN GSAP LOOP
-contactRows.forEach((row) => {
-  gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
-
-  ScrollTrigger.create({
-    trigger: row,
-    start: () => responsiveConfig.startPos,
-    end: () => responsiveConfig.endPos,
-    scrub: true,
-    onUpdate: (self) => {
-      const curve = Math.sin(self.progress * Math.PI);
-      const gap = 1 + (responsiveConfig.maxGap - 1) * curve;
-      row.style.gap = `${gap}rem`;
-
-      const sharpCurve = Math.pow(curve, 4);
-      row.style.opacity = 0.4 + 0.6 * sharpCurve;
-      row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
-    },
-    onLeave: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-    onLeaveBack: () => gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-  });
-});
-
-// Refresh total
-ScrollTrigger.refresh();
 
 // --- MODEL SWITCHING LOGIC ---
 let lastCenteredRow = null;
