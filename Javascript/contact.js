@@ -8,14 +8,21 @@ import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTr
 // --- INITIALIZATION ---
 gsap.registerPlugin(ScrollTrigger);
 
-// 1. UPDATE INITIALIZATION
+// --- INITIALIZATION ---
 const lenis = new Lenis({
+  content: document.querySelector('#scroll-content'), // Kasih tahu konten utamanya
   infinite: true,
   smoothWheel: true,
   smoothTouch: true, 
-  touchMultiplier: 1.2, // Jangan terlalu tinggi biar gak liar
+  touchMultiplier: 1.5,
   lerp: 0.1,
 });
+
+// Refresh hitungan setiap kali ada perubahan DOM (Cloning)
+function refreshLenis() {
+  lenis.resize();
+  ScrollTrigger.refresh();
+}
 
 // Sync dengan ScrollTrigger
 lenis.on("scroll", ScrollTrigger.update);
@@ -72,20 +79,24 @@ updateResponsiveConfig();
 const contactInfo = document.querySelector(".contact-info");
 const parent = contactInfo.parentElement;
 
-// Kita cek, kalau mobile kita hajar clone lebih banyak
 const isMobile = window.innerWidth < 768;
-const cloneCount = isMobile ? 12 : 6; // Mobile butuh lebih banyak biar panjang banget
+const cloneCount = isMobile ? 12 : 6; 
 
 for (let i = 0; i < cloneCount; i++) {
   const clone = contactInfo.cloneNode(true);
   parent.appendChild(clone);
 }
 
-// Prepend juga tambahin dikit buat nafas scroll up
 for (let i = 0; i < 4; i++) {
   const clone = contactInfo.cloneNode(true);
   parent.prepend(clone);
 }
+
+// CRITICAL: Kasih jeda dikit biar browser selesai render clone sebelum dihitung Lenis
+setTimeout(() => {
+  window.scrollTo(0, window.innerHeight);
+  refreshLenis();
+}, 100);
 
 // 2. AMBIL SEMUA ROW SETELAH CLONING SELESAI
 // Pakai querySelectorAll DI SINI, jangan di atas
