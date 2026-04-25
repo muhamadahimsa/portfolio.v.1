@@ -20,32 +20,41 @@ lenis.on("scroll", ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
 
-// --- CLONING LOGIC ---
+// --- CLONING LOGIC (REVISED) ---
 const contactInfo = document.querySelector(".contact-info");
 const parent = contactInfo.parentElement;
-const isMobile = window.innerWidth < 768;
-const cloneCount = isMobile ? 12 : 6; // Mobile butuh lebih panjang
 
-for (let i = 0; i < cloneCount; i++) {
+// Kita hajar 20 clone ke bawah dan 20 ke atas
+// Ini menjamin scrollHeight sangat besar dan menembus "dead zone" mobile
+const cloneCountExtra = 20; 
+
+for (let i = 0; i < cloneCountExtra; i++) {
   parent.appendChild(contactInfo.cloneNode(true));
 }
-for (let i = 0; i < 4; i++) {
+for (let i = 0; i < cloneCountExtra; i++) {
   parent.prepend(contactInfo.cloneNode(true));
 }
 
-// Global variable biar bisa diakses di semua logic
+// Global variable tetap sama
 let allContactRows = [];
 
-// --- EKSEKUSI SETELAH DOM SIAP ---
+// --- EKSEKUSI SETELAH DOM SIAP (REVISED) ---
 setTimeout(() => {
+  // 1. Matikan infinite saat penentuan posisi awal
   lenis.options.infinite = false;
-  const middle = document.body.scrollHeight / 3;
+
+  // 2. Kalkulasi middle yang lebih akurat
+  // Kita arahkan ke tengah-tengah dari total landasan baru
+  const middle = document.body.scrollHeight / 2;
   window.scrollTo(0, middle);
 
-  lenis.options.infinite = true;
+  // 3. Paksa Lenis hitung ulang tinggi landasan barunya
   lenis.resize();
 
-  // AMBIL SEMUA ROW SETELAH CLONING (PENTING!)
+  // 4. Nyalakan mesin Infinite
+  lenis.options.infinite = true;
+
+  // 5. Ambil SEMUA row untuk animasi GSAP
   allContactRows = document.querySelectorAll(".contact-info-row");
 
   allContactRows.forEach((row) => {
@@ -72,8 +81,11 @@ setTimeout(() => {
     });
   });
 
+  // 6. Refresh ScrollTrigger terakhir kali
   ScrollTrigger.refresh();
-}, 600);
+  
+  console.log("Landasan pacu siap: 40+ clones aktif.");
+}, 800); // Naikkan ke 800ms biar browser HP nafas dulu setelah render 40 elemen
 
 // --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
 let lastCenteredRow = null;
