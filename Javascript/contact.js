@@ -39,24 +39,27 @@ for (let i = 0; i < cloneCountExtra; i++) {
 let allContactRows = [];
 
 // --- EKSEKUSI SETELAH DOM SIAP (REVISED) ---
+// --- EKSEKUSI SETELAH DOM SIAP (HARD RESET VERSION) ---
 setTimeout(() => {
-  // 1. Matikan infinite saat penentuan posisi awal
+  // 1. Bersihkan Cache lama ScrollTrigger
+  ScrollTrigger.getAll().forEach(t => t.kill());
+  
+  // 2. Setup Awal Lenis
   lenis.options.infinite = false;
-
-  // 2. Kalkulasi middle yang lebih akurat
-  // Kita arahkan ke tengah-tengah dari total landasan baru
-  const middle = document.body.scrollHeight / 2;
-  window.scrollTo(0, middle);
-
-  // 3. Paksa Lenis hitung ulang tinggi landasan barunya
+  
+  // 3. Paksa hitung ulang semua dimensi DOM
   lenis.resize();
+  
+  // 4. Pakai Lenis ScrollTo, jangan window.scrollTo
+  // Kita arahkan ke tengah landasan secara instan (duration: 0)
+  const targetScroll = document.body.scrollHeight / 2;
+  lenis.scrollTo(targetScroll, { immediate: true, force: true });
 
-  // 4. Nyalakan mesin Infinite
+  // 5. Baru nyalakan Infinite
   lenis.options.infinite = true;
 
-  // 5. Ambil SEMUA row untuk animasi GSAP
+  // 6. Ambil Row & Re-apply Animasi
   allContactRows = document.querySelectorAll(".contact-info-row");
-
   allContactRows.forEach((row) => {
     gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" });
 
@@ -69,23 +72,18 @@ setTimeout(() => {
         const curve = Math.sin(self.progress * Math.PI);
         const gap = 1 + (responsiveConfig.maxGap - 1) * curve;
         row.style.gap = `${gap}rem`;
-
         const sharpCurve = Math.pow(curve, 4);
         row.style.opacity = 0.4 + 0.6 * sharpCurve;
         row.style.filter = `blur(${(1 - sharpCurve) * 3}px)`;
       },
-      onLeave: () =>
-        gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
-      onLeaveBack: () =>
-        gsap.set(row, { opacity: 0.4, filter: "blur(2px)", gap: "1rem" }),
     });
   });
 
-  // 6. Refresh ScrollTrigger terakhir kali
+  // 7. Refresh terakhir kali
   ScrollTrigger.refresh();
   
-  console.log("Landasan pacu siap: 40+ clones aktif.");
-}, 800); // Naikkan ke 800ms biar browser HP nafas dulu setelah render 40 elemen
+  console.log("Hard Reset Selesai. Scroll Pos:", lenis.scroll);
+}, 1000); // Kita kasih 1 detik penuh biar aman
 
 // --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
 let lastCenteredRow = null;
