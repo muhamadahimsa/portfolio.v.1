@@ -9,14 +9,27 @@ import { ScrollTrigger } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTr
 gsap.registerPlugin(ScrollTrigger);
 
 const lenis = new Lenis({
-  infinite: true,
+  // Kita matikan infinite bawaan karena sering bug di mobile touch
+  infinite: false, 
   smoothWheel: true,
   smoothTouch: true,
-  touchMultiplier: 1.2,
+  touchMultiplier: 1.5, // Biar lebih responsif di jempol
   lerp: 0.1,
 });
 
-lenis.on("scroll", ScrollTrigger.update);
+// LOGIC INFINITE MANUAL (Jauh lebih aman buat mobile)
+lenis.on('scroll', ({ scroll, limit }) => {
+  // Jika hampir menyentuh bawah (limit), lompat ke tengah
+  if (scroll > limit - 100) {
+    lenis.scrollTo(limit / 2, { immediate: true });
+  }
+  // Jika hampir menyentuh atas (0), lompat ke tengah
+  if (scroll < 100) {
+    lenis.scrollTo(limit / 2, { immediate: true });
+  }
+  
+  ScrollTrigger.update();
+});
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
 
@@ -81,9 +94,7 @@ setTimeout(() => {
 
   // 7. Refresh terakhir kali
   ScrollTrigger.refresh();
-  
-  console.log("Hard Reset Selesai. Scroll Pos:", lenis.scroll);
-}, 1000); // Kita kasih 1 detik penuh biar aman
+}, 1000);
 
 // --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
 let lastCenteredRow = null;

@@ -1,15 +1,14 @@
 html.lenis, html.lenis body {
-  height: auto;
+  height: auto !important;
 }
 body {
   width: 100%;
-  min-height: 100%;
   overflow-x: hidden;
 
   background-color: var(--secondary);
   font-family: 'General';
   color: var(--primary);
-  overscroll-behavior: none;
+  /* overscroll-behavior: none; */
 }
 
 canvas {
