@@ -33,9 +33,12 @@ const scrollConfig = {
   duration: 2.0, // Durasi scroll lebih lama (cinematic)
   lerp: 0.05, // Nilai rendah = efek 'berat' dan smooth (inertia)
   wheelMultiplier: 0.5, // Menghaluskan tarikan wheel
-  touchMultiplier: 2, // Agar di layar sentuh tetep responsif
+  touchMultiplier: 1.5, // Agar di layar sentuh tetep responsif
   smoothWheel: true,
   smoothTouch: true,
+  syncTouch: true,        // Menghubungkan scroll Lenis dengan jari
+  syncTouchLerp: 0.08,    // Memberikan efek "smooth" setelah jari lepas dari layar
+  touchInertiaMultiplier: 40,
 };
 
 // 2. Inisialisasi Lenis Left Panel
@@ -217,8 +220,6 @@ function raf(time) {
 }
 
 // Mulai loop
-requestAnimationFrame(raf);
-
 requestAnimationFrame(raf);
 
 // Assumes GSAP is loaded

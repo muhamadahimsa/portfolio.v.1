@@ -550,10 +550,14 @@ nav .nav-menu {
     clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
     overflow-y: hidden;
     border: 1px solid var(--secondary);
+    --webkit-overflow-scrolling: touch; 
+    touch-action: none;
   }
   .right-panel {
     width: 100%;
     height: 100vh;
+    --webkit-overflow-scrolling: touch; 
+    touch-action: none;
   }
 
   .category {
