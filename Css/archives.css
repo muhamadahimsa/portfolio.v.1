@@ -186,13 +186,14 @@ canvas {
   background: var(--white);
   width: 100vw;
   min-height: 100vh;
-  height: 70rem;
+  height: auto !important;
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
   overflow: visible;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 15vh;
 }
 body.archives-active {
   overflow: hidden;
