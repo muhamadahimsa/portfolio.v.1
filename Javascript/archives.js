@@ -196,17 +196,19 @@ let lastPointerY = 0;
 const lookAtTarget = new THREE.Vector3(0, 0, 0);
 
 // Fungsi untuk menangkap kemiringan
-window.addEventListener(
-  "deviceorientation",
-  (e) => {
+window.addEventListener("deviceorientation", (e) => {
     if (!e.beta || !e.gamma) return;
 
-    // Beta: Depan-Belakang (-180 ke 180). Kita ambil range natural pegangan HP
-    // Gamma: Kiri-Kanan (-90 ke 90)
-    gyroY = (e.beta - 45) * 0.02; // 45 derajat dianggap posisi netral pegang HP
-    gyroX = e.gamma * 0.02;
+    // Beta (depan-belakang): Kita persempit jangkauan geraknya
+    // Netral di 45 derajat, maksimal gerak cuma 15 derajat ke atas/bawah
+    let tiltY = (e.beta - 45) * 0.01; 
+    gyroY = Math.max(-0.15, Math.min(0.15, tiltY)); // Batas atas/bawah dipersempit
+
+    // Gamma (kiri-kanan): Maksimal gerak cuma 20 derajat ke kiri/kanan
+    let tiltX = e.gamma * 0.01;
+    gyroX = Math.max(-0.2, Math.min(0.2, tiltX)); // Batas kiri/kanan dipersempit
   },
-  true,
+  true
 );
 
 // ========================================================
@@ -772,18 +774,22 @@ const archiveWrapper = document.querySelector(".archive-wrapper");
 let archiveLenis = null; // Biarkan ini global
 
 function initArchiveLenis() {
+  if (archiveLenis) archiveLenis.destroy(); // Bersihkan yang lama
+
   archiveLenis = new Lenis({
-    wrapper: archives,
-    content: archiveWrapper,
-    // 1. Durasi ditambah biar proses scrolling lebih lama/smooth
-    duration: 2.2,
-    // 2. Easing function (Power4.out memberikan feel berat di awal, halus di akhir)
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    // 3. Lerp (Linear Interpolation), makin kecil angkanya makin "berat" & "ngantuk" gerakannya
-    lerp: 0.03,
-    wheelMultiplier: 0.9, // Sedikit dikurangi biar gak terlalu sensitif
+    wrapper: archives, // Ini .archives (fixed, 100vh)
+    content: archiveWrapper, // Ini .archive-wrapper (isinya panjang)
+    duration: 1.5,
+    lerp: 0.08, // Naikkan dikit biar gak terlalu "ngantuk" di mobile
     smoothWheel: true,
-    smoothTouch: true,
+    smoothTouch: true, // WAJIB untuk mobile
+    touchMultiplier: 1.5,
+    infinite: false,
+  });
+
+  // Sinkronisasi ScrollTrigger jika ada animasi di dalam list archives
+  archiveLenis.on('scroll', () => {
+    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.update();
   });
 
   function raf(time) {

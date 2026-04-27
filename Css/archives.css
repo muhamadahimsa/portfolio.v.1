@@ -172,6 +172,7 @@ canvas {
   pointer-events: none;
   transition: opacity 0.4s ease;
   z-index: 150;
+  touch-action: none;
 }
 .archives.active {
   opacity: 1;
@@ -181,9 +182,7 @@ canvas {
   will-change: transform;
 }
 .archive-wrapper {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: relative;
   background: var(--white);
   width: 100vw;
   min-height: 100vh;
@@ -191,7 +190,7 @@ canvas {
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
-  overflow-y: auto;
+  overflow: visible;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
@@ -347,7 +346,7 @@ body.archives-active {
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   opacity: 1;
-  pointer-events: none;
+  pointer-events: none !important;
   will-change: backdrop-filter, opacity;
   transform: translateZ(0); /* Force Hardware Acceleration */
   backface-visibility: hidden;
