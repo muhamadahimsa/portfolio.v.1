@@ -387,6 +387,10 @@ nav .nav-menu {
   .header {
     width: 70%;
   }
+  .archive-wrapper {
+    height: auto !important; /* WAJIB: Biar Lenis bisa ngitung tinggi asli list awards lo */
+    min-height: 100vh;
+  }
 }
 
 /* Tablet Portrait */
@@ -467,6 +471,10 @@ nav .nav-menu {
   }
   .archives-info p {
     line-height: 1.1;
+  }
+  .awards {
+    padding: 10rem 0vw 2rem 0;
+    margin-bottom: 3rem;
   }
   .awards-title {
     width: 100vw;
