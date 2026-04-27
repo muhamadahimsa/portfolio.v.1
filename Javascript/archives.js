@@ -774,22 +774,18 @@ const archiveWrapper = document.querySelector(".archive-wrapper");
 let archiveLenis = null; // Biarkan ini global
 
 function initArchiveLenis() {
-  if (archiveLenis) archiveLenis.destroy(); // Bersihkan yang lama
+  if (archiveLenis) archiveLenis.destroy();
 
   archiveLenis = new Lenis({
-    wrapper: archives, // Ini .archives (fixed, 100vh)
-    content: archiveWrapper, // Ini .archive-wrapper (isinya panjang)
-    duration: 1.5,
-    lerp: 0.08, // Naikkan dikit biar gak terlalu "ngantuk" di mobile
+    wrapper: archives,
+    content: archiveWrapper,
+    duration: 2.2,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    lerp: 0.03,
+    wheelMultiplier: 0.9,
     smoothWheel: true,
-    smoothTouch: true, // WAJIB untuk mobile
-    touchMultiplier: 1.5,
-    infinite: false,
-  });
-
-  // Sinkronisasi ScrollTrigger jika ada animasi di dalam list archives
-  archiveLenis.on('scroll', () => {
-    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.update();
+    smoothTouch: true,
+    syncTouch: true, // TAMBAHKAN INI: Biar scroll mengikuti gerakan jari secara instan
   });
 
   function raf(time) {

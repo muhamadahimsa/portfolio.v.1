@@ -172,7 +172,7 @@ canvas {
   pointer-events: none;
   transition: opacity 0.4s ease;
   z-index: 150;
-  touch-action: none;
+  touch-action: auto;
 }
 .archives.active {
   opacity: 1;
