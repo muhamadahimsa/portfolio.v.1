@@ -12,8 +12,8 @@ if (hero) {
     document.body.classList.contains("page-404") ||
     !document.querySelector(".projects");
 
-  const defaultDisplayImg = "/Asset/Images/404.webp";
-  const tvModelPath = "/Asset/3D/retro_tv.glb";
+  const defaultDisplayImg = "./Asset/Images/404.webp";
+  const tvModelPath = "./Asset/3D/retro_tv.glb";
 
   const manualOffsetX = 0.53;
   const manualOffsetY = -0.1;
