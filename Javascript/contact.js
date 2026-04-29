@@ -94,7 +94,7 @@ setTimeout(() => {
 
   // 7. Refresh terakhir kali
   ScrollTrigger.refresh();
-}, 1000);
+}, 300);
 
 // --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
 let lastCenteredRow = null;

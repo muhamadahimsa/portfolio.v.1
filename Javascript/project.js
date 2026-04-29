@@ -1,7 +1,7 @@
-import Lenis from 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm';
-import gsap from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
-import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm';
-import { Draggable } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/Draggable/+esm';
+import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
+import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
+import { ScrollTrigger } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm";
+import { Draggable } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/Draggable/+esm";
 
 // Registrasi semua plugin agar siap tempur
 gsap.registerPlugin(ScrollTrigger, Draggable);
@@ -36,8 +36,8 @@ const scrollConfig = {
   touchMultiplier: 2, // Agar di layar sentuh tetep responsif
   smoothWheel: true,
   smoothTouch: true,
-  syncTouch: true,        // Menghubungkan scroll Lenis dengan jari
-  syncTouchLerp: 0.08,    // Memberikan efek "smooth" setelah jari lepas dari layar
+  syncTouch: true, // Menghubungkan scroll Lenis dengan jari
+  syncTouchLerp: 0.08, // Memberikan efek "smooth" setelah jari lepas dari layar
   touchInertiaMultiplier: 40,
 };
 
@@ -414,13 +414,14 @@ window.addEventListener("mousemove", (e) => {
 });
 
 // Variable untuk sinkronisasi posisi mouse global
-let galleryCursorX = 0, galleryCursorY = 0;
+let galleryCursorX = 0,
+  galleryCursorY = 0;
 let activeCursors = []; // Array untuk menampung kursor project preview yang aktif
 
 window.addEventListener("mousemove", (e) => {
   mouseX = e.clientX;
   mouseY = e.clientY;
-  
+
   if (modal.classList.contains("gallery-active")) {
     const isLeft = mouseX < window.innerWidth / 2;
     galleryCursorText.textContent = isLeft ? "Prev" : "Next";
@@ -662,6 +663,9 @@ modalTriggers.forEach((trigger) => {
   });
 });
 
+let lastX = 0;
+let velocityX = 0;
+
 function initDraggableGallery() {
   const containerWidth = modalGalleryContainer.offsetWidth;
   const totalImages = currentGalleryImages.length;
@@ -670,43 +674,75 @@ function initDraggableGallery() {
     Draggable.get(modalGalleryInner).kill();
   }
 
-  // Penting: Reset index ke 0 setiap buka modal agar sinkron
   currentGalleryIndex = 0;
   gsap.set(modalGalleryInner, { x: 0 });
 
   Draggable.create(modalGalleryInner, {
     type: "x",
-    // MODIFIKASI BOUNDS: Biar bisa didrag sampai gambar terakhir
     bounds: {
       minX: -(containerWidth * (totalImages - 1)),
       maxX: 0,
     },
-    inertia: true,
-    edgeResistance: 0.8,
+    inertia: false,
+    dragResistance: 0,
+    edgeResistance: 0.5, // Lebih empuk biar gak mental keras pas di ujung
+    minimumMovement: 3, // KUNCI 1: Gerak 3px aja udah dianggap nempel, jadi enteng banget
     allowNativeTouchScrolling: false,
 
-    onClick: function () {
-      const clickX = this.pointerX; // Pakai pointerX milik Draggable agar lebih akurat
-      const rect = modalGalleryContainer.getBoundingClientRect();
-      const midX = rect.left + rect.width / 2;
-
-      const direction = clickX > midX ? 1 : -1;
-      updateGallery(currentGalleryIndex + direction);
-    },
-
-    onDragStart: function () {
+    onDragStart: function() {
+      lastX = this.x;
       gsap.to(galleryCursor, { scale: 0, duration: 0.2 });
     },
 
+    onDrag: function() {
+      // Hitung percepatan real-time
+      velocityX = this.x - lastX;
+      lastX = this.x;
+    },
+
     onDragEnd: function () {
-      const currentX = this.x;
-      // Hitung index berdasarkan posisi pixel saat ini
-      let targetIndex = Math.round(Math.abs(currentX / containerWidth));
+      const dragDistance = this.x - this.startX;
+      const absVelocity = Math.abs(velocityX);
+      const absDistance = Math.abs(dragDistance);
+      
+      let targetIndex = currentGalleryIndex;
+
+      // KUNCI 2: LOGIKA PINDAH AGRESIF
+      // Kalau user nge-flick (kecepatan > 5) ATAU narik lebih dari 15% lebar layar
+      if (absVelocity > 5 || absDistance > (containerWidth * 0.15)) {
+        if (dragDistance > 0) {
+          targetIndex = currentGalleryIndex - 1;
+        } else {
+          targetIndex = currentGalleryIndex + 1;
+        }
+      } else {
+        // Balikin ke tempat semula kalau tarikannya terlalu lemah
+        targetIndex = currentGalleryIndex;
+      }
+
+      // Final Clamp & Update
+      targetIndex = Math.max(0, Math.min(totalImages - 1, targetIndex));
+      currentGalleryIndex = targetIndex;
+      
+      updateGallery(targetIndex);
 
       if (modalGalleryContainer.matches(':hover')) {
         gsap.to(galleryCursor, { scale: 1, duration: 0.3, ease: "back.out(1.7)" });
       }
-      updateGallery(targetIndex);
+    },
+
+    onClick: function () {
+
+      const clickX = this.pointerX;
+
+      const rect = modalGalleryContainer.getBoundingClientRect();
+
+      const midX = rect.left + rect.width / 2;
+
+      const direction = clickX > midX ? 1 : -1;
+
+      updateGallery(currentGalleryIndex + direction);
+
     },
   });
 }
@@ -724,15 +760,15 @@ zoomSlider.addEventListener("input", (e) => {
   gsap.to(currentImg, {
     scale: scaleValue,
     duration: 0.1, // Responsif ngikutin jari/mouse
-    overwrite: true
+    overwrite: true,
   });
 
-  // 2. LOGIC PENTING: 
+  // 2. LOGIC PENTING:
   // Jika sedang zoom, matikan draggable utama biar gak "pindah slide" gak sengaja
   if (scaleValue > 1.1) {
     if (galleryDraggable) galleryDraggable.disable();
     gsap.set(currentImg, { cursor: "move" });
-    
+
     // Opsional: Buat gambar bisa di-drag detailnya saat dizoom
     if (!Draggable.get(currentImg)) {
       Draggable.create(currentImg, { type: "x,y", edgeResistance: 0.5 });
@@ -743,7 +779,7 @@ zoomSlider.addEventListener("input", (e) => {
     // Balik normal
     if (galleryDraggable) galleryDraggable.enable();
     if (Draggable.get(currentImg)) Draggable.get(currentImg).disable();
-    
+
     gsap.to(currentImg, { x: 0, y: 0, scale: 1, duration: 0.4 });
     gsap.set(currentImg, { cursor: "default" });
   }
@@ -752,11 +788,12 @@ zoomSlider.addEventListener("input", (e) => {
 // Reset zoom setiap kali pindah slide atau tutup modal
 function resetZoom() {
   zoomSlider.value = 1;
-  currentGalleryImages.forEach(img => {
+  currentGalleryImages.forEach((img) => {
     gsap.to(img, { scale: 1, x: 0, y: 0, duration: 0.4 });
     if (Draggable.get(img)) Draggable.get(img).disable();
   });
-  if (Draggable.get(modalGalleryInner)) Draggable.get(modalGalleryInner).enable();
+  if (Draggable.get(modalGalleryInner))
+    Draggable.get(modalGalleryInner).enable();
 }
 
 // Logic Show/Hide Gallery Cursor saat Masuk/Keluar Container
@@ -765,7 +802,7 @@ modalGalleryContainer.addEventListener("mouseenter", () => {
     gsap.to(galleryCursor, {
       scale: 1,
       duration: 0.4,
-      ease: "back.out(1.7)"
+      ease: "back.out(1.7)",
     });
   }
 });
@@ -774,7 +811,7 @@ modalGalleryContainer.addEventListener("mouseleave", () => {
   gsap.to(galleryCursor, {
     scale: 0,
     duration: 0.3,
-    ease: "power2.in"
+    ease: "power2.in",
   });
 });
 
@@ -802,7 +839,7 @@ previews.forEach((preview) => {
   const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
   let mouse = { x: 0, y: 0 };
   let pos = { x: 0, y: 0 };
-  
+
   // Objek referensi kursor ini
   const cursorData = { cursor, mouse, pos };
 
@@ -837,9 +874,9 @@ previews.forEach((preview) => {
       duration: 0.6,
       ease: "expo.out",
     });
-    
+
     // Hapus dari array ticker SEGERA agar tidak diproses saat kursor tidak terlihat
-    activeCursors = activeCursors.filter(c => c !== cursorData);
+    activeCursors = activeCursors.filter((c) => c !== cursorData);
   });
 });
 
