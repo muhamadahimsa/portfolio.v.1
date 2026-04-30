@@ -602,6 +602,7 @@ nav .nav-menu {
     display: flex;
     width: 30vw;
     justify-content: space-between;
+    bottom: 10rem;
   }
 
   .project-preview {
