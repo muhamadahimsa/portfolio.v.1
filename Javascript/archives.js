@@ -119,7 +119,7 @@ const CAM_CONFIG = {
   mobile: {
     fov: 100,
     z: 5,
-    limits: { x: 0.5, y: 0.8 }, // Batas mobile dipersempit agar tidak keluar kotak
+    limits: { x: 0.3, y: 0.8 }, // Batas mobile dipersempit agar tidak keluar kotak
   },
 };
 
