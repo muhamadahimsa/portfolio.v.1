@@ -112,7 +112,7 @@ body.noscroll {
 }
 .loader-time {
   position: absolute;
-  bottom: 4rem;
+  bottom: 5rem;
   right: 2rem;
   display: flex;
   color: var(--primary);
