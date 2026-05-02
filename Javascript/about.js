@@ -1,15 +1,37 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
-import Lenis from 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm';
-import gsap from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
-import { ScrollTrigger } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm';
+import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
+import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
+import { ScrollTrigger } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm";
 
 // Registrasi plugin GSAP (Wajib jika pakai ScrollTrigger)
 gsap.registerPlugin(ScrollTrigger);
 
-// variables
+// --- CONFIGURATIONS ---
 const imageContainer = document.getElementById("imageContainer");
 const imageElement = document.getElementById("myImage");
+const asciiContainer = document.querySelector(".ascii-img");
 
+// ASCII Config (B) - Versi Padat
+const ASCII_CHARS = ".:+*#%@0369"; //
+const denseCharIndex = 0; // Karena kita ingin hampir semuanya tebal
+const denseChars = ["@", "#", "%", "8", ".", ":", "*"]; // Karakter untuk efek scramble
+const FONT_SIZE = 6;
+const ASPECT_WIDTH = 16;
+const ASPEC_HEIGHT = 9;
+const ASCII_COLUMNS = 200; // Sesuaikan kerapatan
+const SCRAMBLE_COUNT = 8;
+const SCRAMBLE_SPEED_MS = 60;
+const CELL_APPEAR_MS = 1;
+let isAnimating = false;
+let animationId = null;
+let charWidth, charHeight, ASCII_ROWS;
+const PUSH_RADIUS = 10;
+const PUSH_FORCE = 0.5;
+const SPRING = 0.075;
+const DAMPING = 0.6;
+let mouse = { col: -999, row: -999, isMoving: false };
+
+// Shader Config (A)
 let easeFactor = 0.02;
 let scene, camera, renderer, planeMesh;
 let mousePosition = { x: 0.5, y: 0.5 };
@@ -65,7 +87,7 @@ function initializeScene(texture) {
     50,
     imageElement.offsetWidth / imageElement.offsetHeight,
     0.01,
-    10
+    10,
   );
   camera.position.z = 1;
 
@@ -84,7 +106,7 @@ function initializeScene(texture) {
       uniforms: shaderUniforms,
       vertexShader,
       fragmentShader,
-    })
+    }),
   );
 
   // >>> taruh fungsi scale di sini
@@ -134,12 +156,12 @@ function animateScene() {
 
   planeMesh.material.uniforms.u_mouse.value.set(
     mousePosition.x,
-    1.0 - mousePosition.y
+    1.0 - mousePosition.y,
   );
 
   planeMesh.material.uniforms.u_prevMouse.value.set(
     prevPosition.x,
-    1.0 - prevPosition.y
+    1.0 - prevPosition.y,
   );
 
   aberrationIntensity = Math.max(0.0, aberrationIntensity - 0.05);
@@ -179,6 +201,508 @@ function handleMouseLeave() {
   easeFactor = 0.05;
   targetMousePosition = { ...prevPosition };
 }
+
+// ASCII
+// 1. Inisialisasi awal nilai grid
+function updateGridDimensions() {
+  // PAKAI VARIABLE GLOBAL, JANGAN PAKAI CONST/LET LAGI DI SINI
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  measureCtx.font = `${FONT_SIZE}px monospace`;
+
+  charWidth = Math.ceil(measureCtx.measureText("M").width);
+  charHeight = FONT_SIZE;
+
+  // Hitung ulang baris berdasarkan lebar container saat ini
+  const rect = asciiContainer.getBoundingClientRect();
+  const width = rect.width || window.innerWidth;
+  const height = rect.height || window.innerHeight;
+
+  ASCII_ROWS = Math.round(
+    ASCII_COLUMNS * (height / width) * (charWidth / charHeight),
+  );
+}
+
+// Jalankan fungsi pertama kali
+updateGridDimensions();
+
+function startEffect(img, canvas, staggerDelay) {
+  isAnimating = true;
+  const { asciiGrid, brightnessGrid } = imageToAsciiGrid(img);
+  prepareCanvas(canvas);
+  animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay);
+}
+
+function imageToAsciiGrid(img) {
+  const samplingCanvas = document.createElement("canvas");
+  samplingCanvas.width = ASCII_COLUMNS;
+  samplingCanvas.height = ASCII_ROWS;
+  const sCtx = samplingCanvas.getContext("2d", { willReadFrequently: true });
+
+  const imageAspect = img.naturalWidth / img.naturalHeight;
+  const rect = asciiContainer.getBoundingClientRect();
+  const itemAspect = rect.width / rect.height;
+
+  let cropX = 0,
+    cropY = 0,
+    cropW = img.naturalWidth,
+    cropH = img.naturalHeight;
+  if (imageAspect > itemAspect) {
+    cropW = img.naturalHeight * itemAspect;
+    cropX = (img.naturalWidth - cropW) / 2;
+  } else {
+    cropH = img.naturalWidth / itemAspect;
+    cropY = (img.naturalHeight - cropH) / 2;
+  }
+
+  sCtx.drawImage(
+    img,
+    cropX,
+    cropY,
+    cropW,
+    cropH,
+    0,
+    0,
+    ASCII_COLUMNS,
+    ASCII_ROWS,
+  );
+  const { data } = sCtx.getImageData(0, 0, ASCII_COLUMNS, ASCII_ROWS);
+
+  const asciiGrid = [];
+  const brightnessGrid = [];
+
+  for (let i = 0; i < ASCII_COLUMNS * ASCII_ROWS; i++) {
+    const idx = i * 4;
+    const r = data[idx],
+      g = data[idx + 1],
+      b_val = data[idx + 2],
+      a = data[idx + 3];
+
+    // --- FIX DI SINI: Hitung Col dan Row dari index i ---
+    const currentCol = i % ASCII_COLUMNS;
+    const currentRow = Math.floor(i / ASCII_COLUMNS);
+
+    if (a < 50) {
+      asciiGrid.push({ char: " " }); // Tetap push object kosong biar index ga geser
+      brightnessGrid.push(0);
+    } else {
+      let brightness = (r * 0.299 + g * 0.587 + b_val * 0.114) / 255;
+      let char;
+      if (brightness < 0.3) {
+        const darkPool = ["@", "#", "%", "8", "0", "6", "3", "9", ".", ":", "*"];
+        char = darkPool[Math.floor(Math.random() * darkPool.length)];
+      } else {
+        char = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+      }
+
+      // Pakai currentCol dan currentRow yang sudah dihitung tadi
+      asciiGrid.push({
+        char: char,
+        originalCol: currentCol,
+        originalRow: currentRow,
+        offsetX: 0,
+        offsetY: 0,
+        velX: 0,
+        velY: 0,
+        brightness: brightness,
+      });
+      brightnessGrid.push(brightness);
+    }
+  }
+  return { asciiGrid, brightnessGrid };
+}
+
+function prepareCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const parent = canvas.closest(".ascii-img") || asciiContainer;
+  const rect = parent.getBoundingClientRect();
+
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = `${rect.width}px`;
+  canvas.style.height = `${rect.height}px`;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, rect.width, rect.height);
+}
+
+function drawCharacter(ctx, x, y, char) {
+  const rect = ctx.canvas.getBoundingClientRect();
+  const cw = rect.width / ASCII_COLUMNS;
+  const ch = rect.height / ASCII_ROWS;
+
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(x, y, cw, ch);
+  ctx.fillStyle = "#c8c8c8";
+  ctx.fillText(char, x, y);
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// Tambahkan variabel ini di scope luar/global agar tidak kena reset
+let lastGlobalScrambleTime = 0;
+
+function animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay) {
+  const dpr = window.devicePixelRatio || 2;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const rect = canvas.getBoundingClientRect();
+  const cellW = rect.width / ASCII_COLUMNS;
+  const cellH = rect.height / ASCII_ROWS;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = `${cellH}px monospace`;
+  ctx.textBaseline = "top";
+
+  const totalCells = ASCII_COLUMNS * ASCII_ROWS;
+  const cellStates = new Array(totalCells).fill(null);
+  const startTime = performance.now() + staggerDelay;
+  
+  const cellOrder = shuffleArray(
+    Array.from({ length: totalCells }, (_, i) => i),
+  );
+
+  function frame(timestamp) {
+    if (!canvas.parentElement) return;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    const elapsedSinceStart = timestamp - startTime;
+    
+    // --- 1. LOGIKA TIMING SCRAMBLE GLOBAL (KODE B) ---
+    // Efek kedip setiap 50ms
+    let shouldScrambleGlobal = timestamp - lastGlobalScrambleTime > 50;
+    if (shouldScrambleGlobal) lastGlobalScrambleTime = timestamp;
+
+    const batchSize = 25; 
+    let revealFinished = true;
+
+    for (let i = 0; i < totalCells; i++) {
+      const cellIndex = i;
+      const cell = asciiGrid[cellIndex]; 
+      
+      if (cell.char === " ") continue;
+
+      const orderIndex = cellOrder.indexOf(cellIndex);
+      const appearTime = (orderIndex / batchSize) * CELL_APPEAR_MS;
+
+      if (timestamp >= startTime && elapsedSinceStart >= appearTime) {
+        if (cellStates[cellIndex] === null) {
+          const isDark = brightnessGrid[cellIndex] > denseCharIndex;
+          cellStates[cellIndex] = isDark ? SCRAMBLE_COUNT : 1;
+        }
+
+        if (cellStates[cellIndex] > 1) {
+          revealFinished = false;
+          // Scramble awal pas muncul
+          if (Math.floor(timestamp / SCRAMBLE_SPEED_MS) !== Math.floor((timestamp - 16) / SCRAMBLE_SPEED_MS)) {
+            cell.displayChar = denseChars[Math.floor(Math.random() * denseChars.length)];
+            cellStates[cellIndex]--;
+          }
+        } else {
+          // --- 2. LOGIKA KEDIP-KEDIP KONSTAN (FIX NYA DISINI) ---
+          // Jika sudah muncul semua, karakter tetap ganti-ganti tipis secara global
+          if (shouldScrambleGlobal) {
+            // Kita acak sedikit biar gak semua sel kedip barengan (biar lebih natural)
+            if (Math.random() > 0.85) { 
+               cell.displayChar = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+            } else {
+               cell.displayChar = cell.char;
+            }
+          }
+          cellStates[cellIndex] = 0;
+        }
+      } else {
+        revealFinished = false;
+        continue; 
+      }
+
+      // --- PHYSICS ---
+      const dx = (cell.originalCol + cell.offsetX) - mouse.col;
+      const dy = (cell.originalRow + cell.offsetY) - mouse.row;
+      const distSq = dx * dx + dy * dy;
+      const radiusSq = PUSH_RADIUS * PUSH_RADIUS;
+
+      if (distSq < radiusSq && distSq > 0) {
+        const dist = Math.sqrt(distSq);
+        const force = (1 - dist / PUSH_RADIUS) * PUSH_FORCE;
+        cell.velX += (dx / dist) * force;
+        cell.velY += (dy / dist) * force;
+      }
+
+      cell.velX = (cell.velX - cell.offsetX * SPRING) * DAMPING;
+      cell.velY = (cell.velY - cell.offsetY * SPRING) * DAMPING;
+      cell.offsetX += cell.velX;
+      cell.offsetY += cell.velY;
+
+      // --- RENDER ---
+      const posX = (cell.originalCol + cell.offsetX) * cellW;
+      const posY = (cell.originalRow + cell.offsetY) * cellH;
+
+      ctx.fillStyle = "#c8c8c8";
+      ctx.fillText(cell.displayChar || cell.char, posX, posY);
+    }
+
+    if (revealFinished && !isAnimating) {
+      scheduleImageReveal(canvas);
+    }
+
+    animationId = requestAnimationFrame(frame);
+  }
+
+  animationId = requestAnimationFrame(frame);
+}
+
+function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
+  const dpr = window.devicePixelRatio || 2;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const rect = canvas.getBoundingClientRect();
+  const cellW = rect.width / ASCII_COLUMNS;
+  const cellH = rect.height / ASCII_ROWS;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = `${cellH}px monospace`;
+  ctx.textBaseline = "top";
+
+  const totalCells = ASCII_COLUMNS * ASCII_ROWS;
+  
+  // Filter hanya index yang punya karakter (bukan spasi)
+  const activeIndices = [];
+  for (let i = 0; i < totalCells; i++) {
+    if (asciiGrid[i] && asciiGrid[i].char !== " ") {
+      activeIndices.push(i);
+    }
+  }
+
+  const cellOrder = shuffleArray([...activeIndices]);
+  const cellStates = {}; // Untuk simpan status scramble tiap index
+  const startTime = performance.now();
+  const batchSize = 15; // Naikin biar transisinya lebih cepet dikit
+
+  function frame(timestamp) {
+    if (!canvas.parentElement) return;
+    
+    // WAJIB CLEAR FRAME: Biar sisa physics gak ninggalin jejak (ghosting)
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    let allDone = true;
+    const elapsed = timestamp - startTime;
+
+    // Kita loop berdasarkan semua sel yang harusnya tampil
+    for (let i = 0; i < cellOrder.length; i++) {
+      const idx = cellOrder[i];
+      const cell = asciiGrid[idx];
+      const appearTime = (i / batchSize) * CELL_APPEAR_MS;
+
+      // Jika sel ini sudah masuk waktu "hilang" (reverse reveal)
+      if (elapsed >= appearTime) {
+        if (cellStates[idx] === undefined) cellStates[idx] = SCRAMBLE_COUNT;
+
+        if (cellStates[idx] > 0) {
+          allDone = false;
+          
+          // --- FIX: Gunakan posisi physics terakhir agar tidak "lompat" ---
+          const posX = (cell.originalCol + cell.offsetX) * cellW;
+          const posY = (cell.originalRow + cell.offsetY) * cellH;
+
+          const char = denseChars[Math.floor(Math.random() * denseChars.length)];
+          
+          ctx.fillStyle = "#c8c8c8";
+          ctx.fillText(char, posX, posY);
+          cellStates[idx]--;
+        }
+        // Kalau cellStates[idx] sudah 0, dia gak digambar lagi (efek menghilang)
+      } else {
+        // Belum waktunya hilang, tetep gambar karakter aslinya + physics
+        allDone = false;
+        
+        // Tetap jalankan simulasi physics tipis-tipis biar baliknya smooth ke tengah
+        cell.velX = (cell.velX - cell.offsetX * SPRING) * DAMPING;
+        cell.velY = (cell.velY - cell.offsetY * SPRING) * DAMPING;
+        cell.offsetX += cell.velX;
+        cell.offsetY += cell.velY;
+
+        const posX = (cell.originalCol + cell.offsetX) * cellW;
+        const posY = (cell.originalRow + cell.offsetY) * cellH;
+
+        ctx.fillStyle = "#c8c8c8";
+        ctx.fillText(cell.char, posX, posY);
+      }
+    }
+
+    if (!allDone) {
+      animationId = requestAnimationFrame(frame);
+    } else {
+      isAnimating = false;
+      animationId = null;
+      gsap.to(asciiContainer, { opacity: 0, duration: 0.3 });
+      gsap.to(imageContainer, { opacity: 1, duration: 0.5 });
+    }
+  }
+  animationId = requestAnimationFrame(frame);
+}
+
+function scheduleImageReveal(canvas) {
+  const parent = canvas.closest(".ascii-img");
+  if (parent) parent.classList.add("revealed");
+}
+
+asciiContainer.addEventListener("mousemove", (e) => {
+  const rect = asciiContainer.getBoundingClientRect();
+  const cellW = rect.width / ASCII_COLUMNS;
+  const cellH = rect.height / ASCII_ROWS;
+
+  mouse.col = (e.clientX - rect.left) / cellW;
+  mouse.row = (e.clientY - rect.top) / cellH;
+  mouse.isMoving = true;
+});
+
+asciiContainer.addEventListener("mouseleave", () => {
+  mouse.col = -999;
+  mouse.row = -999;
+  mouse.isMoving = false;
+});
+
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    updateGridDimensions();
+    const canvas = asciiContainer.querySelector("canvas");
+    if (canvas) {
+      prepareCanvas(canvas);
+      const opacity = window.getComputedStyle(asciiContainer).opacity;
+      if (parseFloat(opacity) > 0) {
+        const pngImg = asciiContainer.querySelector("img");
+        startEffect(pngImg, canvas, 0);
+      }
+    }
+  }, 250);
+});
+
+// --- TOGGLE LOGIC REVISI (HARD RESET) ---
+const btnImg = document.querySelector(".btn-img");
+const btnAscii = document.querySelector(".btn-ascii");
+const btnActive = document.querySelector(".btn-active");
+
+// Fungsi pembantu untuk membersihkan segalanya
+function killAsciiAnimation() {
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+  isAnimating = false;
+
+  // Cari canvas dan hapus paksa
+  const canvas = asciiContainer.querySelector("canvas");
+  if (canvas) {
+    canvas.remove();
+  }
+
+  // Hapus class revealed jika ada
+  const parent = asciiContainer.closest(".ascii-img");
+  if (parent) {
+    parent.classList.remove("revealed");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnTexts = document.querySelectorAll(".btn-text");
+  const btnActive = document.querySelector(".btn-active");
+  const btnImg = document.querySelector(".btn-img");
+  const btnAscii = document.querySelector(".btn-ascii");
+
+  // --- 1. Fungsi Animasi Sliding Vertikal ---
+  function moveActiveBox(element) {
+    const rect = {
+      height: element.offsetHeight,
+      top: element.offsetTop,
+    };
+
+    // Animasi naik turun
+    gsap.to(btnActive, {
+      top: rect.top,
+      height: rect.height,
+      duration: 0.5,
+      ease: "power3.inOut",
+    });
+
+    // Update warna teks
+    btnTexts.forEach((btn) => btn.classList.remove("active-text"));
+    element.classList.add("active-text");
+  }
+
+  // Set posisi awal (Img)
+  if (btnImg) {
+    gsap.set(btnActive, {
+      top: btnImg.offsetTop,
+      height: btnImg.offsetHeight,
+    });
+  }
+
+  // --- 2. Logic Event ASCII (Integrasi) ---
+
+  btnAscii.addEventListener("click", () => {
+    if (isAnimating) return;
+
+    // Gerakkan background tombol
+    moveActiveBox(btnAscii);
+
+    killAsciiAnimation();
+    gsap.to(imageContainer, { opacity: 0, duration: 0.5 });
+
+    gsap.to(asciiContainer, {
+      opacity: 1,
+      pointerEvents: "auto",
+      duration: 0.3,
+      onComplete: () => {
+        const pngImg = asciiContainer.querySelector("img");
+        const canvas = document.createElement("canvas");
+        asciiContainer.appendChild(canvas);
+        startEffect(pngImg, canvas, 0);
+      },
+    });
+  });
+
+  btnImg.addEventListener("click", () => {
+    // JANGAN return jika sedang animasi, tapi cek apakah kita sedang di mode ASCII
+    const isAsciiVisible =
+      parseFloat(window.getComputedStyle(asciiContainer).opacity) > 0;
+
+    if (!isAsciiVisible) return; // Kalau udah di mode Image, ya diem aja
+
+    moveActiveBox(btnImg);
+
+    const canvas = asciiContainer.querySelector("canvas");
+    const pngImg = asciiContainer.querySelector("img");
+
+    if (canvas && pngImg) {
+      isAnimating = true; // Kunci biar gak double click
+      const { asciiGrid, brightnessGrid } = imageToAsciiGrid(pngImg);
+
+      // Matikan interaksi mouse ASCII biar gak ganggu proses balik
+      asciiContainer.style.pointerEvents = "none";
+
+      reverseAnimateCells(canvas, asciiGrid, brightnessGrid);
+
+      const parent = asciiContainer.closest(".ascii-img");
+      if (parent) parent.classList.remove("revealed");
+    } else {
+      killAsciiAnimation();
+      gsap.to(asciiContainer, { opacity: 0, duration: 0.5 });
+      gsap.to(imageContainer, { opacity: 1, duration: 0.5 });
+      asciiContainer.style.pointerEvents = "none";
+    }
+  });
+});
 
 // About
 const btn = document.querySelector(".info-btn");
@@ -259,7 +783,7 @@ window.onload = () => {
   animateMenu();
 };
 
-// Arsip toggle fullscreen scroll
+// Info toggle fullscreen scroll
 const infoToggle = document.querySelector(".info-btn");
 const infoClose = document.querySelector(".info-close");
 const infos = document.querySelector(".info");
@@ -277,11 +801,9 @@ infoClose.addEventListener("click", () => {
 
 const horizontal = document.querySelector(".horizontal");
 const vertical = document.querySelector(".vertical");
-const coordX = document.getElementById("coordX");
-const coordY = document.getElementById("coordY");
 const dot = document.querySelector(".dot");
 
-let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 let pos = { x: mouse.x, y: mouse.y };
 
 window.addEventListener("mousemove", (e) => {
@@ -290,15 +812,12 @@ window.addEventListener("mousemove", (e) => {
 });
 
 gsap.ticker.add(() => {
-  pos.x += (mouse.x - pos.x) * 0.12;
-  pos.y += (mouse.y - pos.y) * 0.12;
+  pos.x += (mouse.x - pos.x) * 0.075;
+  pos.y += (mouse.y - pos.y) * 0.075;
 
   gsap.set(horizontal, { top: pos.y });
   gsap.set(vertical, { left: pos.x });
   gsap.set(dot, { x: pos.x, y: pos.y });
-
-  coordX.textContent = Math.round(pos.x);
-  coordY.textContent = Math.round(pos.y);
 });
 
 // 1. Lenis Utama untuk Body (Meski 100vh, tetap biarkan ada)
@@ -334,7 +853,7 @@ allButtons.forEach((btnWrapper) => {
   // Kita cari elemen link/button dan teks di dalamnya
   const btn = btnWrapper.querySelector(".btn-wrapper");
   // Jika tidak ada span .btn-text, dia akan gerakkan isi button apa adanya
-  const btnText = btn.querySelector(".btn-text") || btn;
+  const btnText = btn.querySelectorAll(".btn-text") || btn;
 
   btn.addEventListener("mousemove", (e) => {
     const rect = btn.getBoundingClientRect();
