@@ -18,14 +18,14 @@ const denseChars = ["@", "#", "%", "8", ".", ":", "*"]; // Karakter untuk efek s
 const FONT_SIZE = 6;
 const ASPECT_WIDTH = 16;
 const ASPEC_HEIGHT = 9;
-const ASCII_COLUMNS = 200; // Sesuaikan kerapatan
-const SCRAMBLE_COUNT = 8;
+let ASCII_COLUMNS = 200; // Sesuaikan kerapatan
+let SCRAMBLE_COUNT = 8;
 const SCRAMBLE_SPEED_MS = 60;
 const CELL_APPEAR_MS = 1;
 let isAnimating = false;
 let animationId = null;
 let charWidth, charHeight, ASCII_ROWS;
-const PUSH_RADIUS = 10;
+let PUSH_RADIUS = 10;
 const PUSH_FORCE = 0.5;
 const SPRING = 0.075;
 const DAMPING = 0.6;
@@ -97,6 +97,10 @@ function initializeScene(texture) {
     u_prevMouse: { type: "v2", value: new THREE.Vector2() },
     u_aberrationIntensity: { type: "f", value: 0.0 },
     u_texture: { type: "t", value: texture },
+    u_res: {
+      type: "v2",
+      value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    }, // Tambahkan ini
   };
 
   //   creating a plane mesh with materials
@@ -111,13 +115,17 @@ function initializeScene(texture) {
 
   // >>> taruh fungsi scale di sini
   function updatePlaneScale() {
+    // Tambahkan check ini agar tidak error di mobile
+    if (!planeMesh) return;
+
     if (window.innerWidth <= 576) {
-      planeMesh.scale.set(0.7, 0.7, 1); // mobile
+      planeMesh.scale.set(0.7, 0.7, 1);
     } else if (window.innerWidth <= 1200) {
-      planeMesh.scale.set(0.9, 0.9, 1); // tablet
+      planeMesh.scale.set(0.9, 0.9, 1);
     } else {
-      planeMesh.scale.set(1, 1, 1); // desktop
+      planeMesh.scale.set(1, 1, 1);
     }
+    planeMesh.position.set(0, 0, 0);
   }
 
   // panggil pas init
@@ -143,10 +151,25 @@ function initializeScene(texture) {
   imageContainer.appendChild(renderer.domElement);
 }
 
-// use the existing image from html in the canvas
-initializeScene(new THREE.TextureLoader().load(imageElement.src));
+// --- LOGIKA FLEKSIBEL DESKTOP/MOBILE ---
+const isMobileDevice = window.innerWidth <= 768;
 
-animateScene();
+if (!isMobileDevice) {
+  // DESKTOP: Jalankan Three.js
+  initializeScene(new THREE.TextureLoader().load(imageElement.src));
+  animateScene();
+  // Sembunyikan gambar asli karena diganti WebGL
+  imageElement.style.opacity = "0";
+} else {
+  // MOBILE: Three.js Mati
+  if (renderer) {
+    imageContainer.style.display = "none";
+  }
+  // Pastikan gambar asli MUNCUL
+  imageElement.style.opacity = "1";
+  imageElement.style.visibility = "visible";
+  console.log("Mobile: Hero Image fallback active.");
+}
 
 function animateScene() {
   requestAnimationFrame(animateScene);
@@ -205,20 +228,39 @@ function handleMouseLeave() {
 // ASCII
 // 1. Inisialisasi awal nilai grid
 function updateGridDimensions() {
-  // PAKAI VARIABLE GLOBAL, JANGAN PAKAI CONST/LET LAGI DI SINI
+  const width = window.innerWidth;
+
+  if (width <= 430) {
+    // KHUSUS iPHONE / MOBILE KECIL
+    ASCII_COLUMNS = 60;      // Kerapatan sedang agar detail gambar terjaga di layar sempit
+    PUSH_RADIUS = 4;         // Radius interaksi lebih kecil agar tidak terlalu liar
+    SCRAMBLE_COUNT = 3;      // Scramble lebih cepat
+  } else if (width <= 768) {
+    // MOBILE UMUM / TABLET
+    ASCII_COLUMNS = 80;
+    PUSH_RADIUS = 5;
+    SCRAMBLE_COUNT = 4;
+  } else {
+    // DESKTOP
+    ASCII_COLUMNS = 200;
+    PUSH_RADIUS = 10;
+    SCRAMBLE_COUNT = 8;
+  }
+
   const measureCtx = document.createElement("canvas").getContext("2d");
   measureCtx.font = `${FONT_SIZE}px monospace`;
-
   charWidth = Math.ceil(measureCtx.measureText("M").width);
   charHeight = FONT_SIZE;
 
-  // Hitung ulang baris berdasarkan lebar container saat ini
-  const rect = asciiContainer.getBoundingClientRect();
-  const width = rect.width || window.innerWidth;
-  const height = rect.height || window.innerHeight;
+  // Gunakan offsetWidth dari container utama (.ascii-img) agar canvas sinkron
+  const containerWidth = asciiContainer.offsetWidth;
+  const containerHeight = asciiContainer.offsetHeight;
 
+  const safeHeight = containerHeight || containerWidth * (9 / 16);
+
+  // Kalkulasi baris tetap presisi terhadap aspek rasio container
   ASCII_ROWS = Math.round(
-    ASCII_COLUMNS * (height / width) * (charWidth / charHeight),
+    ASCII_COLUMNS * (safeHeight / containerWidth) * (charWidth / charHeight)
   );
 }
 
@@ -288,7 +330,19 @@ function imageToAsciiGrid(img) {
       let brightness = (r * 0.299 + g * 0.587 + b_val * 0.114) / 255;
       let char;
       if (brightness < 0.3) {
-        const darkPool = ["@", "#", "%", "8", "0", "6", "3", "9", ".", ":", "*"];
+        const darkPool = [
+          "@",
+          "#",
+          "%",
+          "8",
+          "0",
+          "6",
+          "3",
+          "9",
+          ".",
+          ":",
+          "*",
+        ];
         char = darkPool[Math.floor(Math.random() * darkPool.length)];
       } else {
         char = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
@@ -312,19 +366,28 @@ function imageToAsciiGrid(img) {
 }
 
 function prepareCanvas(canvas) {
-  const dpr = window.devicePixelRatio || 1;
-  const parent = canvas.closest(".ascii-img") || asciiContainer;
-  const rect = parent.getBoundingClientRect();
+  let dpr = window.devicePixelRatio || 1;
+  if (window.innerWidth <= 768) dpr = Math.min(dpr, 1.5);
 
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = `${rect.width}px`;
-  canvas.style.height = `${rect.height}px`;
+  // Pakai offsetWidth/Height supaya lebih akurat nangkep ukuran box saat itu
+  const width = asciiContainer.offsetWidth;
+  const height = asciiContainer.offsetHeight;
+
+  // Set resolusi internal (buffer)
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+
+  // Set ukuran display CSS sesuai pixel yang ditangkep (bukan %)
+  // Ini biar GSAP tetep dapet koordinat pixel yang pasti, bukan relatif
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  
+  canvas.style.position = "absolute";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
 
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, rect.width, rect.height);
 }
 
 function drawCharacter(ctx, x, y, char) {
@@ -363,7 +426,7 @@ function animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay) {
   const totalCells = ASCII_COLUMNS * ASCII_ROWS;
   const cellStates = new Array(totalCells).fill(null);
   const startTime = performance.now() + staggerDelay;
-  
+
   const cellOrder = shuffleArray(
     Array.from({ length: totalCells }, (_, i) => i),
   );
@@ -375,19 +438,19 @@ function animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay) {
     ctx.fillRect(0, 0, rect.width, rect.height);
 
     const elapsedSinceStart = timestamp - startTime;
-    
+
     // --- 1. LOGIKA TIMING SCRAMBLE GLOBAL (KODE B) ---
     // Efek kedip setiap 50ms
     let shouldScrambleGlobal = timestamp - lastGlobalScrambleTime > 50;
     if (shouldScrambleGlobal) lastGlobalScrambleTime = timestamp;
 
-    const batchSize = 25; 
+    const batchSize = 25;
     let revealFinished = true;
 
     for (let i = 0; i < totalCells; i++) {
       const cellIndex = i;
-      const cell = asciiGrid[cellIndex]; 
-      
+      const cell = asciiGrid[cellIndex];
+
       if (cell.char === " ") continue;
 
       const orderIndex = cellOrder.indexOf(cellIndex);
@@ -402,8 +465,12 @@ function animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay) {
         if (cellStates[cellIndex] > 1) {
           revealFinished = false;
           // Scramble awal pas muncul
-          if (Math.floor(timestamp / SCRAMBLE_SPEED_MS) !== Math.floor((timestamp - 16) / SCRAMBLE_SPEED_MS)) {
-            cell.displayChar = denseChars[Math.floor(Math.random() * denseChars.length)];
+          if (
+            Math.floor(timestamp / SCRAMBLE_SPEED_MS) !==
+            Math.floor((timestamp - 16) / SCRAMBLE_SPEED_MS)
+          ) {
+            cell.displayChar =
+              denseChars[Math.floor(Math.random() * denseChars.length)];
             cellStates[cellIndex]--;
           }
         } else {
@@ -411,22 +478,23 @@ function animateCells(canvas, asciiGrid, brightnessGrid, staggerDelay) {
           // Jika sudah muncul semua, karakter tetap ganti-ganti tipis secara global
           if (shouldScrambleGlobal) {
             // Kita acak sedikit biar gak semua sel kedip barengan (biar lebih natural)
-            if (Math.random() > 0.85) { 
-               cell.displayChar = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+            if (Math.random() > 0.85) {
+              cell.displayChar =
+                ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
             } else {
-               cell.displayChar = cell.char;
+              cell.displayChar = cell.char;
             }
           }
           cellStates[cellIndex] = 0;
         }
       } else {
         revealFinished = false;
-        continue; 
+        continue;
       }
 
       // --- PHYSICS ---
-      const dx = (cell.originalCol + cell.offsetX) - mouse.col;
-      const dy = (cell.originalRow + cell.offsetY) - mouse.row;
+      const dx = cell.originalCol + cell.offsetX - mouse.col;
+      const dy = cell.originalRow + cell.offsetY - mouse.row;
       const distSq = dx * dx + dy * dy;
       const radiusSq = PUSH_RADIUS * PUSH_RADIUS;
 
@@ -472,7 +540,7 @@ function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
   ctx.textBaseline = "top";
 
   const totalCells = ASCII_COLUMNS * ASCII_ROWS;
-  
+
   // Filter hanya index yang punya karakter (bukan spasi)
   const activeIndices = [];
   for (let i = 0; i < totalCells; i++) {
@@ -488,7 +556,7 @@ function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
 
   function frame(timestamp) {
     if (!canvas.parentElement) return;
-    
+
     // WAJIB CLEAR FRAME: Biar sisa physics gak ninggalin jejak (ghosting)
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, rect.width, rect.height);
@@ -508,13 +576,14 @@ function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
 
         if (cellStates[idx] > 0) {
           allDone = false;
-          
+
           // --- FIX: Gunakan posisi physics terakhir agar tidak "lompat" ---
           const posX = (cell.originalCol + cell.offsetX) * cellW;
           const posY = (cell.originalRow + cell.offsetY) * cellH;
 
-          const char = denseChars[Math.floor(Math.random() * denseChars.length)];
-          
+          const char =
+            denseChars[Math.floor(Math.random() * denseChars.length)];
+
           ctx.fillStyle = "#c8c8c8";
           ctx.fillText(char, posX, posY);
           cellStates[idx]--;
@@ -523,7 +592,7 @@ function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
       } else {
         // Belum waktunya hilang, tetep gambar karakter aslinya + physics
         allDone = false;
-        
+
         // Tetap jalankan simulasi physics tipis-tipis biar baliknya smooth ke tengah
         cell.velX = (cell.velX - cell.offsetX * SPRING) * DAMPING;
         cell.velY = (cell.velY - cell.offsetY * SPRING) * DAMPING;
@@ -543,8 +612,29 @@ function reverseAnimateCells(canvas, asciiGrid, brightnessGrid) {
     } else {
       isAnimating = false;
       animationId = null;
+
+      // 1. Sembunyikan container ASCII
       gsap.to(asciiContainer, { opacity: 0, duration: 0.3 });
-      gsap.to(imageContainer, { opacity: 1, duration: 0.5 });
+
+      // 2. Logika Fallback: Pilih mana yang mau dimunculin
+      if (!isMobileDevice) {
+        // DESKTOP: Munculin Three.js (imageContainer)
+        gsap.to(imageContainer, { opacity: 1, duration: 0.5 });
+        // Pastikan imageElement tetep transparan di desktop agar tidak double
+        imageElement.style.opacity = "1";
+      } else {
+        // MOBILE: Munculin gambar hero.webp asli (imageElement)
+        gsap.to(imageElement, {
+          opacity: 1,
+          duration: 0.5,
+          onStart: () => {
+            imageElement.style.visibility = "visible";
+          },
+        });
+      }
+
+      // Matikan pointer events agar tidak menghalangi klik di bawahnya
+      asciiContainer.style.pointerEvents = "none";
     }
   }
   animationId = requestAnimationFrame(frame);
@@ -653,11 +743,12 @@ document.addEventListener("DOMContentLoaded", () => {
   btnAscii.addEventListener("click", () => {
     if (isAnimating) return;
 
-    // Gerakkan background tombol
     moveActiveBox(btnAscii);
-
     killAsciiAnimation();
+
+    // Sembunyikan KEDUANYA (Three.js dan Gambar Asli)
     gsap.to(imageContainer, { opacity: 0, duration: 0.5 });
+    gsap.to(imageElement, { opacity: 0, duration: 0.5 }); // Tambahkan ini
 
     gsap.to(asciiContainer, {
       opacity: 1,
@@ -673,33 +764,61 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnImg.addEventListener("click", () => {
-    // JANGAN return jika sedang animasi, tapi cek apakah kita sedang di mode ASCII
-    const isAsciiVisible =
-      parseFloat(window.getComputedStyle(asciiContainer).opacity) > 0;
-
-    if (!isAsciiVisible) return; // Kalau udah di mode Image, ya diem aja
+    // Re-check lebar layar tepat saat klik
+    const currentIsMobile = window.innerWidth <= 768;
+    
+    const isAsciiVisible = parseFloat(window.getComputedStyle(asciiContainer).opacity) > 0;
+    if (!isAsciiVisible) return; 
 
     moveActiveBox(btnImg);
 
     const canvas = asciiContainer.querySelector("canvas");
     const pngImg = asciiContainer.querySelector("img");
 
+    if (currentIsMobile) {
+      killAsciiAnimation(); 
+      
+      // 1. Matikan ASCII segera
+      gsap.to(asciiContainer, { 
+        opacity: 0, 
+        duration: 0.3, 
+        onComplete: () => {
+          asciiContainer.style.pointerEvents = "none";
+        }
+      });
+      
+      // 2. PAKSA Hero Image muncul (Gunakan set untuk reset instan sebelum animasi)
+      gsap.set([imageElement, imageContainer], { 
+        display: "block", 
+        visibility: "visible", 
+        opacity: 0 // Start dari 0 untuk fade in
+      });
+
+      gsap.to(imageElement, { 
+        opacity: 1, 
+        duration: 0.5,
+        clearProps: "all",
+      });
+
+      gsap.to(imageContainer, { 
+        opacity: 1, 
+        duration: 1,
+        clearProps: "all",
+      });
+      
+      return; 
+    }
+
+    // --- LOGIKA DESKTOP TETAP SAMA ---
     if (canvas && pngImg) {
-      isAnimating = true; // Kunci biar gak double click
+      isAnimating = true; 
       const { asciiGrid, brightnessGrid } = imageToAsciiGrid(pngImg);
-
-      // Matikan interaksi mouse ASCII biar gak ganggu proses balik
       asciiContainer.style.pointerEvents = "none";
-
       reverseAnimateCells(canvas, asciiGrid, brightnessGrid);
-
-      const parent = asciiContainer.closest(".ascii-img");
-      if (parent) parent.classList.remove("revealed");
     } else {
       killAsciiAnimation();
       gsap.to(asciiContainer, { opacity: 0, duration: 0.5 });
       gsap.to(imageContainer, { opacity: 1, duration: 0.5 });
-      asciiContainer.style.pointerEvents = "none";
     }
   });
 });
