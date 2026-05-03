@@ -478,14 +478,11 @@ h1 {
     bottom: 4rem;
   }
 
-  .coords {
-    bottom: auto;
-    top: 0;
-    padding: 1.5rem;
+  .crosshair {
+    display: none;
   }
   .dot {
-    width: 12px;
-    height: 12px;
+    display: none;
   }
 
   h1 {
