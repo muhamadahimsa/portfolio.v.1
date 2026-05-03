@@ -514,7 +514,7 @@ h1 {
   #imageContainer > * {
     top: 50%;
     transform: translateY(-50%);
-    height: 50vh !important;
+    height: 75vh !important;
   }
 
   .ascii-img {
