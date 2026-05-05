@@ -81,7 +81,7 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  background: var(--blue);
+  background: var(--secondary);
   width: 100%;
   height: 100%;
   clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
@@ -149,18 +149,29 @@ body {
   left: 0;
   padding: 3rem;
   width: 100%;
-  opacity: 0;
   display: flex;
   flex-direction: column;
   gap: 4rem;
   font-size: 16px;
   font-weight: 500;
   letter-spacing: -0.01rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
   text-align: justify;
 }
 .category.active span {
   background: var(--secondary);
   color: var(--primary);
+}
+.line {
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+.line span {
+  display: block;
+  will-change: transform;
+  transform: translateY(100%); /* Start dari bawah baris */
 }
 
 /* RIGHT PANEL */
@@ -218,7 +229,7 @@ section {
 .cursor {
   position: absolute;
   color: var(--primary);
-  background: var(--blue);
+  background: var(--secondary);
   font-size: 14px;
   font-weight: 600;
   padding: 0.5rem 1rem;
@@ -316,7 +327,7 @@ section {
   top: 1.5rem;
   right: 1.5rem;
   color: var(--primary);
-  background: var(--blue);
+  background: var(--secondary);
   font-size: 14px;
   font-weight: 600;
   padding: 0.5rem 1rem;
@@ -440,7 +451,7 @@ section {
   left: 1%;
   transform: translate(-50%, -50%) scale(0);
   color: var(--primary);
-  background: var(--blue);
+  background: var(--secondary);
   font-size: 14px;
   font-weight: 600;
   padding: 0.5rem 1rem;

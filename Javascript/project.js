@@ -1,4 +1,5 @@
 import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
+import SplitType from "https://cdn.jsdelivr.net/npm/split-type@0.3.4/+esm";
 import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 import { ScrollTrigger } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger/+esm";
 import { Draggable } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/Draggable/+esm";
@@ -229,65 +230,126 @@ const infos = document.querySelectorAll(".category-info");
 let activeIndex = 0;
 let isAnimating = false;
 
-// initial setup: set all infos offscreen to the right, then show activeIndex
-gsap.set(infos, { xPercent: 100, opacity: 0, pointerEvents: "none" });
-gsap.set(infos[activeIndex], {
-  xPercent: 0,
-  opacity: 1,
-  pointerEvents: "auto",
-});
+function revealText(container) {
+  const paragraphs = container.querySelectorAll("p");
+  if (!paragraphs.length) return; // Guard clause jika p tidak ditemukan
 
-// initial categories visual
-categories.forEach((c, i) => {
-  c.classList.toggle("active", i === activeIndex);
-  c.style.opacity = i === activeIndex ? "1" : "0.5";
-});
+  // 1. Lakukan split
+  const split = new SplitType(paragraphs, {
+    types: "lines",
+    lineClass: "line",
+  });
+
+  // 2. Bungkus tiap baris
+  split.lines.forEach((line) => {
+    const text = line.innerHTML;
+    line.innerHTML = `<span>${text}</span>`;
+  });
+
+  // 3. Seleksi target untuk GSAP
+  const targetLines = container.querySelectorAll(".line span");
+
+  // FIX: Cek apakah target ada sebelum di-animasiin
+  if (targetLines.length > 0) {
+    gsap.to(targetLines, {
+      y: 0,
+      duration: 1.4,
+      stagger: 0.06,
+      ease: "expo.out",
+      force3D: true,
+    });
+  }
+}
+
+function hideText(container, direction) {
+  const paragraphs = container.querySelectorAll("p");
+  if (!paragraphs.length) return;
+
+  // 1. Ambil target baris yang sudah di-split sebelumnya
+  const targetLines = container.querySelectorAll(".line span");
+
+  // 2. Cek apakah target ada
+  if (targetLines.length > 0) {
+    // Balikkan nilai y: jika direction 1 (naik), teks ke -100%. Jika -1 (turun), teks ke 100%
+    return gsap.to(targetLines, {
+      y: direction > 0 ? "-100%" : "100%",
+      duration: 0.8, // Sedikit lebih cepat dari reveal (1.4) biar nggak dragging
+      stagger: 0.04,
+      ease: "expo.in", // Pakai expo.in supaya teks terasa "akselerasi" saat menghilang
+      force3D: true,
+    });
+  }
+}
+
+// Initial Setup
+gsap.set(infos, { display: "none" });
+gsap.set(infos[activeIndex], { display: "flex" });
+revealText(infos[activeIndex]);
 
 categories.forEach((cat, index) => {
   cat.addEventListener("click", () => {
     if (index === activeIndex || isAnimating) return;
 
-    const oldIndex = activeIndex;
-    const newIndex = index;
-    const direction = newIndex > oldIndex ? 1 : -1; // 1 = moving right → new enters from right, old exits left
-    const oldInfo = infos[oldIndex];
-    const newInfo = infos[newIndex];
-
     isAnimating = true;
+    const oldInfo = infos[activeIndex];
+    const newInfo = infos[index];
+    const direction = index > activeIndex ? 1 : -1;
 
-    // Ensure newInfo start position is offscreen on the correct side (override any CSS)
-    gsap.set(newInfo, {
-      xPercent: 100 * direction,
-      opacity: 0,
-      pointerEvents: "none",
-    });
-
-    // Build timeline to coordinate exit + enter
     const tl = gsap.timeline({
-      defaults: { duration: 0.6, ease: "power3.inOut" },
       onComplete: () => {
-        // After animation, enable interaction only on active info
-        infos.forEach((inf, i) =>
-          gsap.set(inf, { pointerEvents: i === newIndex ? "auto" : "none" }),
-        );
         isAnimating = false;
+        activeIndex = index;
       },
     });
 
-    // Exit old (move out to the left if direction=1, or to the right if direction=-1)
-    tl.to(oldInfo, { xPercent: -100 * direction, opacity: 0 }, 0);
+    // 1. OLD INFO: Geser keluar
+    tl.add(hideText(oldInfo, direction));
 
-    // Slight overlap for nicer feel: new enters slightly after old starts exiting
-    tl.to(newInfo, { xPercent: 0, opacity: 1 }, 0.08);
-
-    // Update category visuals immediately (so user sees active state while animation plays)
-    categories.forEach((c, i) => {
-      c.classList.toggle("active", i === newIndex);
-      c.style.opacity = i === newIndex ? "1" : "0.5";
+    tl.to(oldInfo, {
+      y: -40 * direction,
+      duration: 0.6,
+      ease: "expo.inOut",
+      onComplete: () => {
+        gsap.set(oldInfo, { display: "none", y: 0 });
+      },
     });
 
-    // update activeIndex
-    activeIndex = newIndex;
+    // 2. NEW INFO: Munculkan DULU baru di-reveal teksnya
+    tl.set(
+      newInfo,
+      {
+        display: "flex",
+        y: 40 * direction,
+      },
+      "-=0.3",
+    );
+
+    tl.to(
+      newInfo,
+      {
+        y: 0,
+        duration: 0.8,
+        ease: "expo.out",
+        onStart: () => {
+          // Panggil revealText tepat saat elemen mulai masuk agar kalkulasi line-nya pas
+          revealText(newInfo);
+        },
+      },
+      "-=0.3",
+    );
+
+    // UI Feedback
+    categories.forEach((c, i) => {
+      // Tetap toggle class untuk urusan styling dasar/state
+      c.classList.toggle("active", i === index);
+
+      // Tambahin animasi biar sinkron sama kemewahan teks
+      gsap.to(c, {
+        opacity: i === index ? 1 : 0.4, // Yang aktif terang, yang lain redup
+        duration: 0.6,
+        ease: "power2.out",
+      });
+    });
   });
 });
 
@@ -689,12 +751,12 @@ function initDraggableGallery() {
     minimumMovement: 3, // KUNCI 1: Gerak 3px aja udah dianggap nempel, jadi enteng banget
     allowNativeTouchScrolling: false,
 
-    onDragStart: function() {
+    onDragStart: function () {
       lastX = this.x;
       gsap.to(galleryCursor, { scale: 0, duration: 0.2 });
     },
 
-    onDrag: function() {
+    onDrag: function () {
       // Hitung percepatan real-time
       velocityX = this.x - lastX;
       lastX = this.x;
@@ -704,12 +766,12 @@ function initDraggableGallery() {
       const dragDistance = this.x - this.startX;
       const absVelocity = Math.abs(velocityX);
       const absDistance = Math.abs(dragDistance);
-      
+
       let targetIndex = currentGalleryIndex;
 
       // KUNCI 2: LOGIKA PINDAH AGRESIF
       // Kalau user nge-flick (kecepatan > 5) ATAU narik lebih dari 15% lebar layar
-      if (absVelocity > 5 || absDistance > (containerWidth * 0.15)) {
+      if (absVelocity > 5 || absDistance > containerWidth * 0.15) {
         if (dragDistance > 0) {
           targetIndex = currentGalleryIndex - 1;
         } else {
@@ -723,16 +785,19 @@ function initDraggableGallery() {
       // Final Clamp & Update
       targetIndex = Math.max(0, Math.min(totalImages - 1, targetIndex));
       currentGalleryIndex = targetIndex;
-      
+
       updateGallery(targetIndex);
 
-      if (modalGalleryContainer.matches(':hover')) {
-        gsap.to(galleryCursor, { scale: 1, duration: 0.3, ease: "back.out(1.7)" });
+      if (modalGalleryContainer.matches(":hover")) {
+        gsap.to(galleryCursor, {
+          scale: 1,
+          duration: 0.3,
+          ease: "back.out(1.7)",
+        });
       }
     },
 
     onClick: function () {
-
       const clickX = this.pointerX;
 
       const rect = modalGalleryContainer.getBoundingClientRect();
@@ -742,7 +807,6 @@ function initDraggableGallery() {
       const direction = clickX > midX ? 1 : -1;
 
       updateGallery(currentGalleryIndex + direction);
-
     },
   });
 }

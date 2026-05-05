@@ -103,7 +103,7 @@ body.noscroll {
   background-color: var(--blue);
   transform: scaleY(1);
   will-change: transform;
-  margin-right: -1px; /* Overlap 1px ke kanan untuk menutup celah antar kolom */
+  margin-right: -1px;
   border: none;
   outline: 1px solid var(--blue);
 }
