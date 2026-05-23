@@ -98,14 +98,6 @@ const data = [
     name: "./Asset/Videos/archive-20.mp4",
     title: "Golden Fields",
   },
-  {
-    name: "./Asset/Videos/archive-21.mp4",
-    title: "Golden Fields",
-  },
-  {
-    name: "./Asset/Videos/archive-22.mp4",
-    title: "Golden Fields",
-  },
 ];
 
 // ====== KONFIGURASI BOX 3D (A-E) ======
@@ -170,11 +162,9 @@ const slides = [
   { name: "DYNAMIC CLIP 02", img: "./Asset/Videos/archive-15.mp4" },
   { name: "DEPTH PARALLAX", img: "./Asset/Videos/archive-16.mp4" },
   { name: "INTERACTIVE DRAG PARALLAX", img: "./Asset/Videos/archive-17.mp4" },
-  { name: "FLUID PARALLAX", img: "./Asset/Videos/archive-18.mp4" },
+  { name: "COOL ASCII REVEAL", img: "./Asset/Videos/archive-18.mp4" },
   { name: "HIDDEN GLYPH", img: "./Asset/Videos/archive-19.mp4" },
-  { name: "BRUTALIST PARALLAX", img: "./Asset/Videos/archive-20.mp4" },
-  { name: "ASCII HOVER", img: "./Asset/Videos/archive-21.mp4" },
-  { name: "COOL ASCII REVEAL", img: "./Asset/Videos/archive-22.mp4" },
+  { name: "ASCII HOVER", img: "./Asset/Videos/archive-20.mp4" },
 ];
 
 const config = {
