@@ -209,6 +209,7 @@ p.time {
   }
 
   .loader-time{
+    bottom: 5rem;
     font-size: 8rem;
     height: 8rem;
     padding-right: .5rem;
