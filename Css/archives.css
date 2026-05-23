@@ -37,79 +37,33 @@ canvas {
   z-index: 2;
 }
 
-.dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 8px;
-  height: 8px;
-  background-color: var(--primary);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 155;
+/* Update CSS lo */
+.header h1, 
+.slide-info p {
+  position: relative;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+  margin: 0;
 }
 
-.crosshair {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 155;
+.header h1 .line,
+.slide-info p .line {
+  display: block;
+  will-change: transform;
+  overflow: hidden !important;
 }
 
-.line {
+.slide-info{
   position: absolute;
-  background-color: rgba(255, 255, 255, 0.509);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.horizontal {
-  height: 1px;
-  width: 100%;
   top: 50%;
   left: 0;
-}
-
-.vertical {
-  width: 1px;
-  height: 100%;
-  top: 0;
-  left: 50%;
-}
-
-.coords {
-  position: fixed;
-  top: 50%;
   transform: translateY(-50%);
-  left: 0;
   width: 100%;
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
-  padding: 2rem;
-  font-size: 14px;
-  z-index: 20;
-  pointer-events: none;
-}
-.coords .ofh {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-.coords span {
   color: var(--primary);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 1px;
-}
-.coord-block {
-  position: relative;
-  background: var(--primary);
-  width: 0.5rem;
-  height: 0.5rem;
+  font-weight: 800;
+  z-index: 2;
 }
 
 .archives-btn {

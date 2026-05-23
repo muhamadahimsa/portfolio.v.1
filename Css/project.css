@@ -416,9 +416,8 @@ section {
   display: flex;
   align-items: center;
   gap: 15px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 10px 20px;
+  background: var(--white);
+  padding: 5px 15px;
   border-radius: 50px;
   opacity: 0;
   scale: 0;
@@ -434,13 +433,15 @@ section {
 .zoom-slider {
   width: 150px;
   cursor: pointer;
-  accent-color: var(--blue); /* Pakai variabel warna lo */
+  accent-color: var(--secondary);
 }
 
 .zoom-control span {
-  color: white;
-  font-family: monospace;
+  position: relative;
+  top: -1.5px;
+  color: var(--secondary);
   font-weight: bold;
+  font-size: 18px;
   user-select: none;
 }
 

@@ -10,7 +10,7 @@ function revealTransition() {
   return gsap.to(".block", {
     scaleY: 0,
     duration: 1,
-    stagger: { each: 0.1, from: "start", grid: "auto", axis: "x" },
+    stagger: { each: 0.1, from: "center", grid: "auto", axis: "x" },
     ease: ease,
     onComplete: () => {
       gsap.set(".block", { visibility: "hidden" });
@@ -54,7 +54,7 @@ function animateTransition() {
   return gsap.to(".block", {
     scaleY: 1,
     duration: 1,
-    stagger: { each: 0.1, from: "start", grid: [2, 6], axis: "x" },
+    stagger: { each: 0.1, from: "center", grid: [2, 7], axis: "x" },
     ease: ease,
   });
 }

@@ -35,8 +35,10 @@
         <div class="block"></div>
         <div class="block"></div>
         <div class="block"></div>
+        <div class="block"></div>
       </div>
       <div class="transition-row row-2">
+        <div class="block"></div>
         <div class="block"></div>
         <div class="block"></div>
         <div class="block"></div>
@@ -105,22 +107,6 @@
         </div>
       </div>
 
-      <div class="crosshair">
-        <div class="line horizontal"></div>
-        <div class="line vertical"></div>
-      </div>
-      <div class="dot"></div>
-      <div class="coords">
-        <div class="ofh">
-          <div class="coord-block"></div>
-          <span id="coordX">0</span>
-        </div>
-        <div class="ofh">
-          <span id="coordY">0</span>
-          <div class="coord-block"></div>
-        </div>
-      </div>
-
       <div class="archives-btn">
         <div class="--button">
           <div class="btn-wrapper">
@@ -133,37 +119,17 @@
         </div>
       </div>
 
-      <div class="archives">
-        <div class="archive-wrapper inner">
-          <div class="archive-title">
-            <h2>archives</h2>
-            <p>(20)</p>
-          </div>
-
-          <div class="archives-info">
-            <p>
-              A look behind the curtain at the prototypes and experiments that define my craft. This archive captures the raw intersection of mathematics, art, and front-end performance.
-            </p>
-          </div>
-
-          <section class="awards">
-            <div class="awards-title">
-              <div class="awards-title-wrapper">
-                <div class="ofh">
-                  <p>N</p>
-                  <p>Title</p>
-                </div>
-                <p>Focus</p>
-              </div>
-            </div>
-            <div class="awards-list"></div>
-          </section>
+      <section class="slider">
+        <div class="slide-info">
+          <p id="slide-title"></p>
+          <p id="slide-count"></p>
         </div>
-        <div class="archive-bg"></div>
-      </div>
-      <div class="award-preview"></div>
+
+        <canvas></canvas>
+      </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/split-type@0.3.4/umd/index.min.js"></script>
     <script type="module" src="./Javascript/transition.js"></script>
     <script type="module" src="./Javascript/nav.js"></script>
     <script type="module" src="./Javascript/archives.js"></script>
