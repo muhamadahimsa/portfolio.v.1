@@ -450,6 +450,9 @@ nav .nav-menu {
   .crosshair {
     display: none;
   }
+  .slide-info{
+    padding: 0 1rem;
+  }
 }
 
 /* Extra Small Device (rare but safe) */
