@@ -1,3 +1,4 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
 import SplitType from "https://cdn.jsdelivr.net/npm/split-type@0.3.4/+esm";
 import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
@@ -442,6 +443,308 @@ previewsContainers.forEach((container) => {
   observer.observe(container);
 });
 
+// Canvas WebGL Utama
+const canvasContainer = document.createElement("div");
+canvasContainer.style.position = "fixed";
+canvasContainer.style.top = "0";
+canvasContainer.style.left = "0";
+canvasContainer.style.width = "100vw";
+canvasContainer.style.height = "100vh";
+canvasContainer.style.pointerEvents = "none";
+canvasContainer.style.zIndex = "2";
+const contentWrapper = document.getElementById("right-scroll"); // sesuaikan id-nya
+if (contentWrapper) {
+    contentWrapper.appendChild(canvasContainer);
+} else {
+    document.body.appendChild(canvasContainer); // fallback kalau id gak ketemu
+}
+
+// Setup Three.js Scene dasar
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -10, 10);
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+canvasContainer.appendChild(renderer.domElement);
+
+const clock = new THREE.Clock();
+
+const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+// REVISI SHADER: Mendukung mode Cover (1.0) dan Contain (0.0) secara dinamis
+const fragmentShader = `
+    varying vec2 vUv;
+    uniform sampler2D u_texture;    
+    uniform vec2 u_mouse;
+    uniform vec2 u_prevMouse;
+    uniform float u_aberrationIntensity;
+    
+    uniform vec2 u_res;          
+    uniform vec2 u_containerRes; 
+    uniform float u_fitMode;     // 0.0 = Contain, 1.0 = Cover
+
+    void main() {
+        float containerRatio = u_containerRes.x / u_containerRes.y;
+        float imageRatio = u_res.x / u_res.y;
+        
+        vec2 correctedUv = vUv;
+        
+        // Cek jika rasionya valid untuk menghindari pembagian dengan nol
+        if(u_res.x > 0.0 && u_res.y > 0.0 && u_containerRes.x > 0.0 && u_containerRes.y > 0.0) {
+            if (u_fitMode > 0.5) {
+                // --- LOGIKA OBJECT-FIT: COVER (Untuk Video) ---
+                if (containerRatio > imageRatio) {
+                    float widthRatio = containerRatio / imageRatio;
+                    correctedUv.y = (vUv.y - 0.5) * widthRatio + 0.5;
+                } else {
+                    float heightRatio = imageRatio / containerRatio;
+                    correctedUv.x = (vUv.x - 0.5) * heightRatio + 0.5;
+                }
+            } else {
+                // --- LOGIKA OBJECT-FIT: CONTAIN (Untuk Gambar) ---
+                if (containerRatio > imageRatio) {
+                    float widthRatio = imageRatio / containerRatio;
+                    correctedUv.x = (vUv.x - 0.5) / widthRatio + 0.5;
+                    if (correctedUv.x < 0.0 || correctedUv.x > 1.0) { discard; }
+                } else {
+                    float heightRatio = containerRatio / imageRatio;
+                    correctedUv.y = (vUv.y - 0.5) / heightRatio + 0.5;
+                    if (correctedUv.y < 0.0 || correctedUv.y > 1.0) { discard; }
+                }
+            }
+        }
+
+        vec2 grid = vec2(60.0, 60.0);
+        vec2 invGrid = vec2(0.01666667, 0.01666667);
+
+        vec2 gridUV = floor(correctedUv * grid) * invGrid;
+        vec2 centerOfPixel = gridUV + invGrid;
+        
+        vec2 mouseDirection = u_mouse - u_prevMouse;
+        vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+        float pixelDistanceToMouse = length(pixelToMouseDirection);
+        float strength = smoothstep(0.3, 0.0, pixelDistanceToMouse);
+ 
+        vec2 uvOffset = strength * -mouseDirection * 0.2;
+        vec2 uv = correctedUv - uvOffset;
+
+        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { discard; }
+
+        float shift = strength * u_aberrationIntensity * 0.01;
+
+        vec4 colorR = texture2D(u_texture, uv + vec2(shift, 0.0));
+        vec4 colorG = texture2D(u_texture, uv);
+        vec4 colorB = texture2D(u_texture, uv - vec2(shift, 0.0));
+
+        gl_FragColor = vec4(colorR.r, colorG.g, colorB.b, 1.0);
+    }
+`;
+
+const previewItems = [];
+const htmlPreviews = document.querySelectorAll(".project-preview");
+const textureLoader = new THREE.TextureLoader();
+
+htmlPreviews.forEach((previewEl) => {
+  let texture;
+  let texturesArray = [];
+  let imagesElements = [];
+  const videoEl = previewEl.querySelector("video");
+  let fitMode = 0.0; // Default gambar = 0.0 (Contain)
+  
+  if (videoEl) {
+    texture = new THREE.VideoTexture(videoEl);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    fitMode = 1.0; // Video = 1.0 (Cover)
+  } else {
+    imagesElements = Array.from(previewEl.querySelectorAll("img.preview-item"));
+    if (imagesElements.length > 0) {
+      texturesArray = imagesElements.map(img => textureLoader.load(img.src));
+      texture = texturesArray[0];
+      imagesElements[0].classList.add("active");
+    } else {
+      const singleImg = previewEl.querySelector("img");
+      texture = singleImg ? textureLoader.load(singleImg.src) : new THREE.Texture();
+    }
+  }
+
+  // REVISI: Tambahkan uniform u_fitMode ke shader
+  const uniforms = {
+    u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+    u_prevMouse: { value: new THREE.Vector2(0.5, 0.5) },
+    u_aberrationIntensity: { value: 0.0 },
+    u_texture: { value: texture },
+    u_res: { value: new THREE.Vector2(1, 1) }, // Akan di-update begitu asset siap
+    u_containerRes: { value: new THREE.Vector2(1, 1) },
+    u_fitMode: { value: fitMode }
+  };
+
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader, transparent: true });
+  const mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+
+  const itemData = {
+    element: previewEl,
+    videoElement: videoEl || null, // Simpan reference video jika ada
+    mesh: mesh,
+    mousePosition: { x: 0.5, y: 0.5 },
+    targetMousePosition: { x: 0.5, y: 0.5 },
+    prevPosition: { x: 0.5, y: 0.5 },
+    aberrationIntensity: 0.0,
+    easeFactor: 0.02,
+    isHovered: false,
+    
+    hasSlideshow: texturesArray.length > 1,
+    textures: texturesArray,
+    images: imagesElements,
+    currentIndex: 0,
+    slideTimer: 0,
+    slideDuration: 2.5,
+    isIntersecting: false
+  };
+
+  // REVISI: Ambil resolusi video secara aman lewat event loadedmetadata
+  if (videoEl) {
+    if (videoEl.videoWidth > 0) {
+      mesh.material.uniforms.u_res.value.set(videoEl.videoWidth, videoEl.videoHeight);
+    } else {
+      videoEl.addEventListener('loadedmetadata', () => {
+        mesh.material.uniforms.u_res.value.set(videoEl.videoWidth, videoEl.videoHeight);
+      });
+    }
+  } else if (texturesArray.length > 0) {
+    texture.image?.addEventListener('load', () => {
+      if(texture.image) {
+        mesh.material.uniforms.u_res.value.set(texture.image.width, texture.image.height);
+      }
+    });
+  }
+
+  previewEl.addEventListener("mousemove", (e) => {
+    itemData.easeFactor = 0.02;
+    const rect = previewEl.getBoundingClientRect();
+    itemData.prevPosition = { ...itemData.targetMousePosition };
+    itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
+    itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
+    itemData.aberrationIntensity = 1.0;
+  });
+
+  previewEl.addEventListener("mouseenter", (e) => {
+    itemData.isHovered = true;
+    itemData.easeFactor = 0.02;
+    const rect = previewEl.getBoundingClientRect();
+    itemData.mousePosition.x = itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
+    itemData.mousePosition.y = itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
+  });
+
+  previewEl.addEventListener("mouseleave", () => {
+    itemData.isHovered = false;
+    itemData.easeFactor = 0.05;
+    itemData.targetMousePosition = { ...itemData.prevPosition };
+  });
+
+  previewItems.push(itemData);
+});
+
+// Masih memantau target container slideshow (.previews) maupun target wrapper video
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      const foundItem = previewItems.find(item => item.element.contains(entry.target));
+      if (foundItem) {
+        foundItem.isIntersecting = entry.isIntersecting;
+      }
+    });
+  },
+  { root: null, threshold: 0.3 }
+);
+
+htmlPreviews.forEach((previewEl) => {
+  const target = previewEl.querySelector(".previews") || previewEl.querySelector(".project-preview-wrapper");
+  if(target) observer.observe(target);
+});
+
+// Loop render utama
+function animate() {
+  requestAnimationFrame(animate);
+
+  const delta = clock.getDelta();
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  previewItems.forEach((item) => {
+    const rect = item.element.getBoundingClientRect();
+
+    if (rect.bottom < 0 || rect.top > height) {
+      item.mesh.visible = false;
+      return;
+    }
+    item.mesh.visible = true;
+
+    item.mesh.scale.set(rect.width / width, rect.height / height, 1);
+    const posX = (rect.left + rect.width / 2) / width - 0.5;
+    const posY = -(rect.top + rect.height / 2) / height + 0.5;
+    item.mesh.position.set(posX, posY, 0);
+
+    item.mesh.material.uniforms.u_containerRes.value.set(rect.width, rect.height);
+
+    // REVISI: Ambil resolusi real video setiap frame jika di awal gagal termuat
+    if (item.videoElement) {
+      if (item.videoElement.videoWidth > 0) {
+        item.mesh.material.uniforms.u_res.value.set(item.videoElement.videoWidth, item.videoElement.videoHeight);
+      }
+    } else {
+      const currentTex = item.mesh.material.uniforms.u_texture.value;
+      if (currentTex && currentTex.image) {
+        item.mesh.material.uniforms.u_res.value.set(currentTex.image.width, currentTex.image.height);
+      }
+    }
+
+    // Logic slideshow (Hanya jalan kalau item punya slideshow gambar)
+    if (item.hasSlideshow && item.isIntersecting) {
+      item.slideTimer += delta;
+      if (item.slideTimer >= item.slideDuration) {
+        item.slideTimer = 0;
+
+        item.images[item.currentIndex].classList.remove("active");
+        item.currentIndex = (item.currentIndex + 1) % item.textures.length;
+        item.images[item.currentIndex].classList.add("active");
+        
+        const activeTexture = item.textures[item.currentIndex];
+        item.mesh.material.uniforms.u_texture.value = activeTexture;
+
+        if (activeTexture.image) {
+          item.mesh.material.uniforms.u_res.value.set(activeTexture.image.width, activeTexture.image.height);
+        }
+      }
+    }
+
+    item.mousePosition.x += (item.targetMousePosition.x - item.mousePosition.x) * item.easeFactor;
+    item.mousePosition.y += (item.targetMousePosition.y - item.mousePosition.y) * item.easeFactor;
+
+    item.mesh.material.uniforms.u_mouse.value.set(item.mousePosition.x, 1.0 - item.mousePosition.y);
+    item.mesh.material.uniforms.u_prevMouse.value.set(item.prevPosition.x, 1.0 - item.prevPosition.y);
+
+    item.aberrationIntensity = Math.max(0.0, item.aberrationIntensity - 0.05);
+    item.mesh.material.uniforms.u_aberrationIntensity.value = item.aberrationIntensity;
+  });
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener("resize", () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 // ===========================================
 // === PROJECT MODAL LOGIC (VIDEO & GALLERY) ===
 // ===========================================
@@ -884,65 +1187,65 @@ modalGalleryContainer.addEventListener("mouseleave", () => {
 // ===============================
 const previews = document.querySelectorAll(".project-preview");
 
-previews.forEach((preview) => {
-  const cursor = document.createElement("div");
-  cursor.classList.add("cursor");
-  cursor.textContent = "View Project";
-  preview.appendChild(cursor);
+// previews.forEach((preview) => {
+//   const cursor = document.createElement("div");
+//   cursor.classList.add("cursor");
+//   cursor.textContent = "View Project";
+//   preview.appendChild(cursor);
 
-  gsap.set(cursor, {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    pointerEvents: "none",
-    xPercent: 5,
-    yPercent: -95,
-    clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-  });
+//   gsap.set(cursor, {
+//     position: "absolute",
+//     top: 0,
+//     left: 0,
+//     pointerEvents: "none",
+//     xPercent: 5,
+//     yPercent: -95,
+//     clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
+//   });
 
-  const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
-  let mouse = { x: 0, y: 0 };
-  let pos = { x: 0, y: 0 };
+//   const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+//   let mouse = { x: 0, y: 0 };
+//   let pos = { x: 0, y: 0 };
 
-  // Objek referensi kursor ini
-  const cursorData = { cursor, mouse, pos };
+//   // Objek referensi kursor ini
+//   const cursorData = { cursor, mouse, pos };
 
-  preview.addEventListener("mousemove", (e) => {
-    const rect = preview.getBoundingClientRect();
-    mouse.x = clamp(e.clientX - rect.left, 0, rect.width);
-    mouse.y = clamp(e.clientY - rect.top, 0, rect.height);
-  });
+//   preview.addEventListener("mousemove", (e) => {
+//     const rect = preview.getBoundingClientRect();
+//     mouse.x = clamp(e.clientX - rect.left, 0, rect.width);
+//     mouse.y = clamp(e.clientY - rect.top, 0, rect.height);
+//   });
 
-  preview.addEventListener("mouseenter", (e) => {
-    const rect = preview.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-    pos.x = mouse.x; // Langsung lompat ke posisi mouse biar gak telat
-    pos.y = mouse.y;
+//   preview.addEventListener("mouseenter", (e) => {
+//     const rect = preview.getBoundingClientRect();
+//     mouse.x = e.clientX - rect.left;
+//     mouse.y = e.clientY - rect.top;
+//     pos.x = mouse.x; // Langsung lompat ke posisi mouse biar gak telat
+//     pos.y = mouse.y;
 
-    gsap.to(cursor, {
-      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-      duration: 0.6,
-      ease: "expo.out",
-    });
+//     gsap.to(cursor, {
+//       clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+//       duration: 0.6,
+//       ease: "expo.out",
+//     });
 
-    // Masukkan ke array ticker jika belum ada
-    if (!activeCursors.includes(cursorData)) {
-      activeCursors.push(cursorData);
-    }
-  });
+//     // Masukkan ke array ticker jika belum ada
+//     if (!activeCursors.includes(cursorData)) {
+//       activeCursors.push(cursorData);
+//     }
+//   });
 
-  preview.addEventListener("mouseleave", () => {
-    gsap.to(cursor, {
-      clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-      duration: 0.6,
-      ease: "expo.out",
-    });
+//   preview.addEventListener("mouseleave", () => {
+//     gsap.to(cursor, {
+//       clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
+//       duration: 0.6,
+//       ease: "expo.out",
+//     });
 
-    // Hapus dari array ticker SEGERA agar tidak diproses saat kursor tidak terlihat
-    activeCursors = activeCursors.filter((c) => c !== cursorData);
-  });
-});
+//     // Hapus dari array ticker SEGERA agar tidak diproses saat kursor tidak terlihat
+//     activeCursors = activeCursors.filter((c) => c !== cursorData);
+//   });
+// });
 
 // ===============================
 // CURSOR LEFT-PANEL (semua .box.--images)
