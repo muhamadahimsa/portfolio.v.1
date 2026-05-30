@@ -314,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gsap.fromTo(
       enterBtn,
       { translateY: "100%" },
-      { translateY: "0%", duration: 1, ease: "power4.out" },
+      { translateY: "0%", duration: .3, ease: "power4.in" },
     );
 
     enterBtn.onclick = () => {

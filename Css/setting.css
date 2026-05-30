@@ -146,12 +146,33 @@ body.noscroll {
   position: relative;
   transform: translateY(100%);
   cursor: pointer;
-  color: var(--primary);
+  color: var(--secondary);
+  background: var(--primary);
+  padding: .4rem .9rem;
+  border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.02rem;
   text-transform: uppercase;
+  transition: all .3s ease;
   overflow: hidden;
+}
+#enter-btn::before{
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  content: '';
+  background: var(--secondary);
+  height: 0%;
+  width: 100%;
+  transition: all .3s ease;
+  z-index: -1;
+}
+#enter-btn:hover{
+  color: var(--primary);
+}
+#enter-btn:hover::before{
+  height: 100%;
 }
 
 /* Nav */
