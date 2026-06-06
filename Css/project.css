@@ -702,6 +702,9 @@ nav .nav-menu {
     width: 90vw;
     height: 23.75vh;
   }
+  .project-preview video{
+    width: 90%;
+  }
   .previews {
     width: 90vw;
     height: 23.75vh;
