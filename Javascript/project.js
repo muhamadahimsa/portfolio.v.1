@@ -443,6 +443,11 @@ previewsContainers.forEach((container) => {
   observer.observe(container);
 });
 
+// 1. SETUP TITIK PANDANG RESPONSIVE (BREAKPOINT 768PX)
+const mobileQuery = window.matchMedia("(max-width: 768px)");
+let isMobile = mobileQuery.matches;
+let isThreeInitialized = false; // Flag penanda apakah WebGL sudah siap
+
 // Canvas WebGL Utama
 const canvasContainer = document.createElement("div");
 canvasContainer.style.position = "fixed";
@@ -452,22 +457,22 @@ canvasContainer.style.width = "100vw";
 canvasContainer.style.height = "100vh";
 canvasContainer.style.pointerEvents = "none";
 canvasContainer.style.zIndex = "2";
-const contentWrapper = document.getElementById("right-scroll"); // sesuaikan id-nya
+
+// Atur visibilitas awal berdasarkan deteksi layar mobile
+canvasContainer.style.display = isMobile ? "none" : "block";
+
+const contentWrapper = document.getElementById("right-scroll");
 if (contentWrapper) {
     contentWrapper.appendChild(canvasContainer);
 } else {
-    document.body.appendChild(canvasContainer); // fallback kalau id gak ketemu
+    document.body.appendChild(canvasContainer);
 }
 
-// Setup Three.js Scene dasar
-const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -10, 10);
-const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-canvasContainer.appendChild(renderer.domElement);
-
-const clock = new THREE.Clock();
+// Deklarasi global variabel Three.js agar bisa diakses secara kondisional
+let scene, camera, renderer, clock;
+const previewItems = [];
+const htmlPreviews = document.querySelectorAll(".project-preview");
+let textureLoader;
 
 const vertexShader = `
     varying vec2 vUv;
@@ -477,7 +482,6 @@ const vertexShader = `
     }
 `;
 
-// REVISI SHADER: Mendukung mode Cover (1.0) dan Contain (0.0) secara dinamis
 const fragmentShader = `
     varying vec2 vUv;
     uniform sampler2D u_texture;    
@@ -495,10 +499,8 @@ const fragmentShader = `
         
         vec2 correctedUv = vUv;
         
-        // Cek jika rasionya valid untuk menghindari pembagian dengan nol
         if(u_res.x > 0.0 && u_res.y > 0.0 && u_containerRes.x > 0.0 && u_containerRes.y > 0.0) {
             if (u_fitMode > 0.5) {
-                // --- LOGIKA OBJECT-FIT: COVER (Untuk Video) ---
                 if (containerRatio > imageRatio) {
                     float widthRatio = containerRatio / imageRatio;
                     correctedUv.y = (vUv.y - 0.5) * widthRatio + 0.5;
@@ -507,7 +509,6 @@ const fragmentShader = `
                     correctedUv.x = (vUv.x - 0.5) * heightRatio + 0.5;
                 }
             } else {
-                // --- LOGIKA OBJECT-FIT: CONTAIN (Untuk Gambar) ---
                 if (containerRatio > imageRatio) {
                     float widthRatio = imageRatio / containerRatio;
                     correctedUv.x = (vUv.x - 0.5) / widthRatio + 0.5;
@@ -546,134 +547,150 @@ const fragmentShader = `
     }
 `;
 
-const previewItems = [];
-const htmlPreviews = document.querySelectorAll(".project-preview");
-const textureLoader = new THREE.TextureLoader();
+// 2. FUNGSI INISIALISASI WEBGL (HANYA UNTUK DESKTOP)
+function initWebGL() {
+  if (isThreeInitialized) return; // Mencegah duplikasi inisialisasi
 
-htmlPreviews.forEach((previewEl) => {
-  let texture;
-  let texturesArray = [];
-  let imagesElements = [];
-  const videoEl = previewEl.querySelector("video");
-  let fitMode = 0.0; // Default gambar = 0.0 (Contain)
-  
-  if (videoEl) {
-    texture = new THREE.VideoTexture(videoEl);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    fitMode = 1.0; // Video = 1.0 (Cover)
-  } else {
-    imagesElements = Array.from(previewEl.querySelectorAll("img.preview-item"));
-    if (imagesElements.length > 0) {
-      texturesArray = imagesElements.map(img => textureLoader.load(img.src));
-      texture = texturesArray[0];
-      imagesElements[0].classList.add("active");
-    } else {
-      const singleImg = previewEl.querySelector("img");
-      texture = singleImg ? textureLoader.load(singleImg.src) : new THREE.Texture();
-    }
-  }
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -10, 10);
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  canvasContainer.appendChild(renderer.domElement);
 
-  // REVISI: Tambahkan uniform u_fitMode ke shader
-  const uniforms = {
-    u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
-    u_prevMouse: { value: new THREE.Vector2(0.5, 0.5) },
-    u_aberrationIntensity: { value: 0.0 },
-    u_texture: { value: texture },
-    u_res: { value: new THREE.Vector2(1, 1) }, // Akan di-update begitu asset siap
-    u_containerRes: { value: new THREE.Vector2(1, 1) },
-    u_fitMode: { value: fitMode }
-  };
+  clock = new THREE.Clock();
+  textureLoader = new THREE.TextureLoader();
 
-  const geometry = new THREE.PlaneGeometry(1, 1);
-  const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader, transparent: true });
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
-
-  const itemData = {
-    element: previewEl,
-    videoElement: videoEl || null, // Simpan reference video jika ada
-    mesh: mesh,
-    mousePosition: { x: 0.5, y: 0.5 },
-    targetMousePosition: { x: 0.5, y: 0.5 },
-    prevPosition: { x: 0.5, y: 0.5 },
-    aberrationIntensity: 0.0,
-    easeFactor: 0.02,
-    isHovered: false,
+  htmlPreviews.forEach((previewEl) => {
+    let texture;
+    let texturesArray = [];
+    let imagesElements = [];
+    const videoEl = previewEl.querySelector("video");
+    let fitMode = 0.0;
     
-    hasSlideshow: texturesArray.length > 1,
-    textures: texturesArray,
-    images: imagesElements,
-    currentIndex: 0,
-    slideTimer: 0,
-    slideDuration: 2.5,
-    isIntersecting: false
-  };
-
-  // REVISI: Ambil resolusi video secara aman lewat event loadedmetadata
-  if (videoEl) {
-    if (videoEl.videoWidth > 0) {
-      mesh.material.uniforms.u_res.value.set(videoEl.videoWidth, videoEl.videoHeight);
+    if (videoEl) {
+      texture = new THREE.VideoTexture(videoEl);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      fitMode = 1.0;
     } else {
-      videoEl.addEventListener('loadedmetadata', () => {
+      imagesElements = Array.from(previewEl.querySelectorAll("img.preview-item"));
+      if (imagesElements.length > 0) {
+        texturesArray = imagesElements.map(img => textureLoader.load(img.src));
+        texture = texturesArray[0];
+        imagesElements[0].classList.add("active");
+      } else {
+        const singleImg = previewEl.querySelector("img");
+        texture = singleImg ? textureLoader.load(singleImg.src) : new THREE.Texture();
+      }
+    }
+
+    const uniforms = {
+      u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+      u_prevMouse: { value: new THREE.Vector2(0.5, 0.5) },
+      u_aberrationIntensity: { value: 0.0 },
+      u_texture: { value: texture },
+      u_res: { value: new THREE.Vector2(1, 1) },
+      u_containerRes: { value: new THREE.Vector2(1, 1) },
+      u_fitMode: { value: fitMode }
+    };
+
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader, transparent: true });
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    const itemData = {
+      element: previewEl,
+      videoElement: videoEl || null,
+      mesh: mesh,
+      mousePosition: { x: 0.5, y: 0.5 },
+      targetMousePosition: { x: 0.5, y: 0.5 },
+      prevPosition: { x: 0.5, y: 0.5 },
+      aberrationIntensity: 0.0,
+      easeFactor: 0.02,
+      isHovered: false,
+      hasSlideshow: texturesArray.length > 1,
+      textures: texturesArray,
+      images: imagesElements,
+      currentIndex: 0,
+      slideTimer: 0,
+      slideDuration: 2.5,
+      isIntersecting: false
+    };
+
+    if (videoEl) {
+      if (videoEl.videoWidth > 0) {
         mesh.material.uniforms.u_res.value.set(videoEl.videoWidth, videoEl.videoHeight);
+      } else {
+        videoEl.addEventListener('loadedmetadata', () => {
+          mesh.material.uniforms.u_res.value.set(videoEl.videoWidth, videoEl.videoHeight);
+        });
+      }
+    } else if (texturesArray.length > 0) {
+      texture.image?.addEventListener('load', () => {
+        if(texture.image) {
+          mesh.material.uniforms.u_res.value.set(texture.image.width, texture.image.height);
+        }
       });
     }
-  } else if (texturesArray.length > 0) {
-    texture.image?.addEventListener('load', () => {
-      if(texture.image) {
-        mesh.material.uniforms.u_res.value.set(texture.image.width, texture.image.height);
-      }
+
+    // Event listener mouse di-filter agar aktif hanya saat desktop
+    previewEl.addEventListener("mousemove", (e) => {
+      if (isMobile) return;
+      itemData.easeFactor = 0.02;
+      const rect = previewEl.getBoundingClientRect();
+      itemData.prevPosition = { ...itemData.targetMousePosition };
+      itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
+      itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
+      itemData.aberrationIntensity = 1.0;
     });
-  }
 
-  previewEl.addEventListener("mousemove", (e) => {
-    itemData.easeFactor = 0.02;
-    const rect = previewEl.getBoundingClientRect();
-    itemData.prevPosition = { ...itemData.targetMousePosition };
-    itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
-    itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
-    itemData.aberrationIntensity = 1.0;
-  });
-
-  previewEl.addEventListener("mouseenter", (e) => {
-    itemData.isHovered = true;
-    itemData.easeFactor = 0.02;
-    const rect = previewEl.getBoundingClientRect();
-    itemData.mousePosition.x = itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
-    itemData.mousePosition.y = itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
-  });
-
-  previewEl.addEventListener("mouseleave", () => {
-    itemData.isHovered = false;
-    itemData.easeFactor = 0.05;
-    itemData.targetMousePosition = { ...itemData.prevPosition };
-  });
-
-  previewItems.push(itemData);
-});
-
-// Masih memantau target container slideshow (.previews) maupun target wrapper video
-const observer = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      const foundItem = previewItems.find(item => item.element.contains(entry.target));
-      if (foundItem) {
-        foundItem.isIntersecting = entry.isIntersecting;
-      }
+    previewEl.addEventListener("mouseenter", (e) => {
+      if (isMobile) return;
+      itemData.isHovered = true;
+      itemData.easeFactor = 0.02;
+      const rect = previewEl.getBoundingClientRect();
+      itemData.mousePosition.x = itemData.targetMousePosition.x = (e.clientX - rect.left) / rect.width;
+      itemData.mousePosition.y = itemData.targetMousePosition.y = (e.clientY - rect.top) / rect.height;
     });
-  },
-  { root: null, threshold: 0.3 }
-);
 
-htmlPreviews.forEach((previewEl) => {
-  const target = previewEl.querySelector(".previews") || previewEl.querySelector(".project-preview-wrapper");
-  if(target) observer.observe(target);
-});
+    previewEl.addEventListener("mouseleave", () => {
+      if (isMobile) return;
+      itemData.isHovered = false;
+      itemData.easeFactor = 0.05;
+      itemData.targetMousePosition = { ...itemData.prevPosition };
+    });
 
-// Loop render utama
+    previewItems.push(itemData);
+  });
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const foundItem = previewItems.find(item => item.element.contains(entry.target));
+        if (foundItem) {
+          foundItem.isIntersecting = entry.isIntersecting;
+        }
+      });
+    },
+    { root: null, threshold: 0.3 }
+  );
+
+  htmlPreviews.forEach((previewEl) => {
+    const target = previewEl.querySelector(".previews") || previewEl.querySelector(".project-preview-wrapper");
+    if(target) observer.observe(target);
+  });
+
+  isThreeInitialized = true;
+}
+
+// 3. LOOP RENDER UTAMA (BERHENTI JIKA DI MOBILE)
 function animate() {
   requestAnimationFrame(animate);
+  
+  // SAKELAR PENGAMAN: Jika layar mobile aktif, hentikan perhitungan dan proses rendering
+  if (isMobile || !isThreeInitialized) return;
 
   const delta = clock.getDelta();
   const width = window.innerWidth;
@@ -695,7 +712,6 @@ function animate() {
 
     item.mesh.material.uniforms.u_containerRes.value.set(rect.width, rect.height);
 
-    // REVISI: Ambil resolusi real video setiap frame jika di awal gagal termuat
     if (item.videoElement) {
       if (item.videoElement.videoWidth > 0) {
         item.mesh.material.uniforms.u_res.value.set(item.videoElement.videoWidth, item.videoElement.videoHeight);
@@ -707,7 +723,6 @@ function animate() {
       }
     }
 
-    // Logic slideshow (Hanya jalan kalau item punya slideshow gambar)
     if (item.hasSlideshow && item.isIntersecting) {
       item.slideTimer += delta;
       if (item.slideTimer >= item.slideDuration) {
@@ -739,10 +754,30 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-animate();
+// 4. SISTEM KONTROL JALANNYA KODE (CEK WINDOW LOAD)
+window.addEventListener("load", () => {
+  if (!isMobile) {
+    initWebGL();
+  }
+  animate(); // Loop dipanggil sekali, jalannya diatur via flag isMobile di dalam fungsinya
+});
 
+// 5. MONITOR PERUBAHAN RESIZE LAYAR SECARA REALTIME
 window.addEventListener("resize", () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  // Update flag mobile status terbaru
+  isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  if (isMobile) {
+    // Hilangkan canvas total dari pandangan di mobile
+    canvasContainer.style.display = "none";
+  } else {
+    // Munculkan kembali canvas dan inisialisasi jika desktop aktif kembali
+    canvasContainer.style.display = "block";
+    if (!isThreeInitialized) {
+      initWebGL();
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
 });
 
 // ===========================================
