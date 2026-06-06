@@ -1083,7 +1083,7 @@ archiveToggles.forEach((toggle) => {
 
     const tl = gsap.timeline({ defaults: { ease: "power3.inOut" } });
     tl.to(".header h1 .line", {
-      yPercent: -400,
+      yPercent: -500,
       duration: 0.6,
       stagger: 0.02,
     }).fromTo(
