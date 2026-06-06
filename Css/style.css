@@ -219,8 +219,8 @@ p.time {
   .project .ofh h1 {
     height: 61px;
     font-size: 60px;
-    line-height: 90%;
     letter-spacing: -0.2rem;
+    line-height: 61px;
   }
   .project .ofh {
     height: 61px;

@@ -239,15 +239,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const projectsA = document.querySelectorAll(".project");
   const projectsContainer = document.querySelector(".projects");
 
-  // 1. VARIABLE UNTUK EFEK MOUSE TILT (KONTANER MENGIKUTI MOUSE)
-  mouse = { x: 0, y: 0 }; // Posisi target mouse saat ini (rentang -1 sampai 1)
-  let target = { x: 0, y: 0 }; // Posisi interpolasi/smooth untuk GSAP
+  mouse = { x: 0, y: 0 };
+  let target = { x: 0, y: 0 };
 
   function init3DCubes() {
-    // Centering awal kontainer .projects via GSAP agar presisi di tengah layar
     gsap.set(projectsContainer, { xPercent: -50, yPercent: -50 });
 
-    // Setup posisi awal semua kubus (sama seperti sebelumnya)
     projectsA.forEach((project, index) => {
       const cube = project.querySelector(".cube");
       const sides = project.querySelectorAll("h1");
@@ -266,13 +263,14 @@ document.addEventListener("DOMContentLoaded", () => {
         z: 0,
         rotationY: 0,
       });
-      cube.style.setProperty('--cube-depth', `${width}px`);
+
+      cube.style.setProperty("--cube-depth", `${width}px`);
 
       project.isHovered = false;
       project.currentSide = 0;
     });
 
-    // 2. MASTER CLOCK GLOBAL (Sama seperti kemarin, selaras total)
+    // MASTER CLOCK GLOBAL
     function triggerGlobalRotation() {
       gsap.to(document.querySelectorAll(".project .cube"), {
         rotationY: (index, target) => {
@@ -291,11 +289,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     gsap.delayedCall(1.5, triggerGlobalRotation);
 
-    // 3. LOGIKA INTERAKSI MOUSE (Pop-Out Sumbu Z)
+    // LOGIKA RESPONSIVE: HOVER (DESKTOP) & KLIK BERTAHAP (MOBILE)
     projectsA.forEach((project) => {
       const cube = project.querySelector(".cube");
 
-      project.addEventListener("mouseenter", () => {
+      // Fungsi untuk memajukan cube (Pop-Out)
+      function activateCube() {
         project.isHovered = true;
         gsap.to(cube, {
           z: 100,
@@ -303,9 +302,10 @@ document.addEventListener("DOMContentLoaded", () => {
           ease: "power3.out",
           overwrite: "auto",
         });
-      });
+      }
 
-      project.addEventListener("mouseleave", () => {
+      // Fungsi untuk memundurkan cube (Pop-In)
+      function deactivateCube() {
         project.isHovered = false;
         gsap.to(cube, {
           z: 0,
@@ -313,37 +313,70 @@ document.addEventListener("DOMContentLoaded", () => {
           ease: "power3.out",
           overwrite: "auto",
         });
+      }
+
+      // Event Desktop (Hanya jalan jika layar di atas 576px)
+      project.addEventListener("mouseenter", () => {
+        if (window.innerWidth > 576) activateCube();
+      });
+
+      project.addEventListener("mouseleave", () => {
+        if (window.innerWidth > 576) deactivateCube();
+      });
+
+      // Handle Klik khusus Mobile & Desktop
+      project.addEventListener("click", (e) => {
+        // Cek apakah device sedang berada di mode mobile
+        if (window.innerWidth <= 576) {
+          // Jika kubus ini belum aktif/belum pop-out sebelumnya
+          if (!project.isHovered) {
+            e.preventDefault(); // Tahan dulu link href-nya biar gak langsung pindah halaman
+
+            // Mundurkan semua kubus lain terlebih dahulu (Reset yang lain)
+            projectsA.forEach((p) => {
+              if (p !== project && p.isHovered) {
+                const c = p.querySelector(".cube");
+                p.isHovered = false;
+                gsap.to(c, {
+                  z: 0,
+                  duration: 0.5,
+                  ease: "power3.out",
+                  overwrite: "auto",
+                });
+              }
+            });
+
+            // Aktifkan kubus yang baru diklik ini
+            activateCube();
+          }
+          // Jika klik kedua kalinya pada kubus yang sama (sudah pop-out), biarkan link href berjalan normal!
+        }
       });
     });
 
-    // 4. LOGIKA BARU: PARALLAX 3D TILT PADA CONTAINER
-    // Kita dengarkan gerakan mouse di area screen/window
+    // LOGIKA PARALLAX 3D TILT CONTAINER (Hanya diaktifkan untuk Desktop)
     window.addEventListener("mousemove", (e) => {
-      // Cari titik tengah layar browser
+      if (window.innerWidth <= 576) return; // Skip di mobile biar gak pusing layarnya gerak-gerak
+
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
-
-      // Hitung posisi mouse relatif terhadap titik tengah (menghasilkan angka antara -1 sampai 1)
       mouse.x = (e.clientX - centerX) / centerX;
       mouse.y = (e.clientY - centerY) / centerY;
     });
 
-    // Gunakan GSAP Ticker untuk meng-update rotasi kontainer secara real-time & super smooth
     gsap.ticker.add(() => {
-      // Easing formula (lerp) agar gerakannya gak kaku, melainkan nge-glide halus (damping effect)
-      target.x += (mouse.x - target.x) * 0.08;
-      target.y += (mouse.y - target.y) * 0.08;
+      if (window.innerWidth > 576) {
+        target.x += (mouse.x - target.x) * 0.08;
+        target.y += (mouse.y - target.y) * 0.08;
 
-      // Mengubah pergerakan mouse menjadi derajat kemiringan 3D
-      // Angka 15 dan -15 adalah batas maksimal kemiringan derajat (bisa lo naikin kalau mau makin miring)
-      const rotateX = target.y * -15; // Mouse ke atas/bawah memutar sumbu X
-      const rotateY = target.x * 15; // Mouse ke kanan/kiri memutar sumbu Y
+        const rotateX = target.y * -15;
+        const rotateY = target.x * 15;
 
-      // Terapkan efek kemiringan ke kontainer utama lewat GSAP
-      gsap.set(projectsContainer, {
-        rotationX: rotateX,
-        rotationY: rotateY,
-      });
+        gsap.set(projectsContainer, { rotationX: rotateX, rotationY: rotateY });
+      } else {
+        // Reset kemiringan di mobile agar tegak lurus rapi
+        gsap.set(projectsContainer, { rotationX: 0, rotationY: 0 });
+      }
     });
   }
 
@@ -486,10 +519,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = li.getAttribute("data-img");
         if (img) setDisplayImage(img);
         playGlitchSound();
-
-        // 2. Animasi Flip Teks (Manual Trigger)
-        projects.forEach((p) => mouseOutAnimation(p)); // Reset semua teks dulu
-        mouseOverAnimation(li); // Naikkan teks yang diklik
 
         // 3. Logic Gulir Kubus (RotationX)
         // Index 0 -> 0deg, Index 1 -> 90deg, Index 2 -> 180deg, Index 3 -> 270deg
