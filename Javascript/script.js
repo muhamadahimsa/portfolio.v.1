@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.module.js";
-import gsap from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
+import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 import { vertexShader, fragmentShader } from "./shaders.js";
 import { playGlitchSound } from "./audio.js";
 
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Mouse & Animation Logic
-  const mouse = { x: 0, y: 0 };
+  let mouse = { x: 0, y: 0 };
   let gyro = { x: 0, y: 0 };
   const lerpedMouse = { x: 0, y: 0 };
   const clock = new THREE.Clock();
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     monitorGroup.rotation.x = lerpedMouse.y * 0.1;
     monitorGroup.rotation.y = lerpedMouse.x * 0.2;
 
-    // Jika monitorGroup punya monitor kecil di dalamnya, 
+    // Jika monitorGroup punya monitor kecil di dalamnya,
     // rotasi ini akan memberikan efek kedalaman yang keren
     renderer.render(scene, camera);
   }
@@ -164,15 +164,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- LOGIC GYRO UNTUK INDEX (RESPONSIVE) ---
   if (window.innerWidth <= 1200) {
-    window.addEventListener("deviceorientation", (e) => {
-      if (e.beta === null || e.gamma === null) return;
+    window.addEventListener(
+      "deviceorientation",
+      (e) => {
+        if (e.beta === null || e.gamma === null) return;
 
-      // Normalisasi nilai agar seimbang dengan range mouse (-0.5 sampai 0.5)
-      // Gamma: Miring kiri-kanan
-      // Beta: Miring depan-belakang (dikurangi 45 derajat posisi normal)
-      gyro.x = (e.gamma / 90) * 0.5; 
-      gyro.y = ((e.beta - 45) / 90) * 0.5;
-    }, true);
+        // Normalisasi nilai agar seimbang dengan range mouse (-0.5 sampai 0.5)
+        // Gamma: Miring kiri-kanan
+        // Beta: Miring depan-belakang (dikurangi 45 derajat posisi normal)
+        gyro.x = (e.gamma / 90) * 0.5;
+        gyro.y = ((e.beta - 45) / 90) * 0.5;
+      },
+      true,
+    );
   }
 
   window.addEventListener("resize", () => {
@@ -197,10 +201,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- PROJECT LIST TEXT ANIMATION ---
-  document.querySelectorAll(".project").forEach((item) => {
-    item.addEventListener("mouseover", () => mouseOverAnimation(item));
-    item.addEventListener("mouseout", () => mouseOutAnimation(item));
-  });
+  // document.querySelectorAll(".project").forEach((item) => {
+  //   item.addEventListener("mouseover", () => mouseOverAnimation(item));
+  //   item.addEventListener("mouseout", () => mouseOutAnimation(item));
+  // });
 
   const mouseOverAnimation = (elem) => {
     gsap.to(elem.querySelectorAll("h1:nth-child(1)"), {
@@ -232,6 +236,119 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const projectsA = document.querySelectorAll(".project");
+  const projectsContainer = document.querySelector(".projects");
+
+  // 1. VARIABLE UNTUK EFEK MOUSE TILT (KONTANER MENGIKUTI MOUSE)
+  mouse = { x: 0, y: 0 }; // Posisi target mouse saat ini (rentang -1 sampai 1)
+  let target = { x: 0, y: 0 }; // Posisi interpolasi/smooth untuk GSAP
+
+  function init3DCubes() {
+    // Centering awal kontainer .projects via GSAP agar presisi di tengah layar
+    gsap.set(projectsContainer, { xPercent: -50, yPercent: -50 });
+
+    // Setup posisi awal semua kubus (sama seperti sebelumnya)
+    projectsA.forEach((project, index) => {
+      const cube = project.querySelector(".cube");
+      const sides = project.querySelectorAll("h1");
+
+      if (!cube || sides.length < 4) return;
+
+      const width = project.getBoundingClientRect().width;
+      const halfWidth = width / 2;
+
+      gsap.set(sides[0], { rotationY: 0, z: 0 });
+      gsap.set(sides[1], { rotationY: 90, x: halfWidth, z: -halfWidth });
+      gsap.set(sides[2], { rotationY: 180, z: -width });
+      gsap.set(sides[3], { rotationY: -90, x: -halfWidth, z: -halfWidth });
+      gsap.set(cube, {
+        transformOrigin: `50% 50% -${halfWidth}px`,
+        z: 0,
+        rotationY: 0,
+      });
+      cube.style.setProperty('--cube-depth', `${width}px`);
+
+      project.isHovered = false;
+      project.currentSide = 0;
+    });
+
+    // 2. MASTER CLOCK GLOBAL (Sama seperti kemarin, selaras total)
+    function triggerGlobalRotation() {
+      gsap.to(document.querySelectorAll(".project .cube"), {
+        rotationY: (index, target) => {
+          const parentProject = target.closest(".project");
+          if (parentProject.isHovered) return parentProject.currentSide * -90;
+
+          parentProject.currentSide++;
+          return parentProject.currentSide * -90;
+        },
+        duration: 1,
+        ease: "power3.inOut",
+        stagger: 0.3,
+      });
+
+      gsap.delayedCall(2.5, triggerGlobalRotation);
+    }
+    gsap.delayedCall(1.5, triggerGlobalRotation);
+
+    // 3. LOGIKA INTERAKSI MOUSE (Pop-Out Sumbu Z)
+    projectsA.forEach((project) => {
+      const cube = project.querySelector(".cube");
+
+      project.addEventListener("mouseenter", () => {
+        project.isHovered = true;
+        gsap.to(cube, {
+          z: 100,
+          duration: 0.5,
+          ease: "power3.out",
+          overwrite: "auto",
+        });
+      });
+
+      project.addEventListener("mouseleave", () => {
+        project.isHovered = false;
+        gsap.to(cube, {
+          z: 0,
+          duration: 0.5,
+          ease: "power3.out",
+          overwrite: "auto",
+        });
+      });
+    });
+
+    // 4. LOGIKA BARU: PARALLAX 3D TILT PADA CONTAINER
+    // Kita dengarkan gerakan mouse di area screen/window
+    window.addEventListener("mousemove", (e) => {
+      // Cari titik tengah layar browser
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      // Hitung posisi mouse relatif terhadap titik tengah (menghasilkan angka antara -1 sampai 1)
+      mouse.x = (e.clientX - centerX) / centerX;
+      mouse.y = (e.clientY - centerY) / centerY;
+    });
+
+    // Gunakan GSAP Ticker untuk meng-update rotasi kontainer secara real-time & super smooth
+    gsap.ticker.add(() => {
+      // Easing formula (lerp) agar gerakannya gak kaku, melainkan nge-glide halus (damping effect)
+      target.x += (mouse.x - target.x) * 0.08;
+      target.y += (mouse.y - target.y) * 0.08;
+
+      // Mengubah pergerakan mouse menjadi derajat kemiringan 3D
+      // Angka 15 dan -15 adalah batas maksimal kemiringan derajat (bisa lo naikin kalau mau makin miring)
+      const rotateX = target.y * -15; // Mouse ke atas/bawah memutar sumbu X
+      const rotateY = target.x * 15; // Mouse ke kanan/kiri memutar sumbu Y
+
+      // Terapkan efek kemiringan ke kontainer utama lewat GSAP
+      gsap.set(projectsContainer, {
+        rotationX: rotateX,
+        rotationY: rotateY,
+      });
+    });
+  }
+
+  window.addEventListener("load", init3DCubes);
+
   // --- TIME FOOTER ---
   const updateTime = () => {
     const timeElement = document.querySelector(".time");
@@ -262,7 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
       DeviceOrientationEvent.requestPermission()
         .then((permissionState) => {
           if (permissionState === "granted") {
-            
           }
         })
         .catch(console.error);
@@ -314,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gsap.fromTo(
       enterBtn,
       { translateY: "100%" },
-      { translateY: "0%", duration: .3, ease: "power4.in" },
+      { translateY: "0%", duration: 0.3, ease: "power4.in" },
     );
 
     enterBtn.onclick = () => {
@@ -364,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.innerWidth <= 1200) {
         // MATIKAN NAVIGASI TOTAL
         e.preventDefault();
-        e.stopImmediatePropagation(); 
+        e.stopImmediatePropagation();
 
         // 1. Jalankan Glitch TV
         const img = li.getAttribute("data-img");
@@ -372,15 +488,15 @@ document.addEventListener("DOMContentLoaded", () => {
         playGlitchSound();
 
         // 2. Animasi Flip Teks (Manual Trigger)
-        projects.forEach(p => mouseOutAnimation(p)); // Reset semua teks dulu
+        projects.forEach((p) => mouseOutAnimation(p)); // Reset semua teks dulu
         mouseOverAnimation(li); // Naikkan teks yang diklik
 
         // 3. Logic Gulir Kubus (RotationX)
         // Index 0 -> 0deg, Index 1 -> 90deg, Index 2 -> 180deg, Index 3 -> 270deg
         gsap.to(".view-wrapper", {
-          rotationX: index * 90, 
+          rotationX: index * 90,
           duration: 0.5,
-          ease: "power4.out"
+          ease: "power4.out",
         });
       }
     });
@@ -398,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Listener leavetimer (TV kembali ke default)
   if (projectsEl) {
     projectsEl.addEventListener("mouseleave", () => {
-      // Di mobile kita tidak ingin reset ke default saat jari lepas, 
+      // Di mobile kita tidak ingin reset ke default saat jari lepas,
       // tapi di desktop iya.
       if (window.innerWidth > 1200) {
         setDisplayImage(defaultDisplayImg);
@@ -414,7 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
         z: 2, // Angka lebih besar = lebih jauh
         y: 0.5,
         duration: 1.2,
-        ease: "power3.out"
+        ease: "power3.out",
       });
     } else {
       // Kamera kembali ke posisi default desktop
@@ -422,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
         z: 1.5,
         y: 0.4,
         duration: 1.2,
-        ease: "power3.out"
+        ease: "power3.out",
       });
     }
   }

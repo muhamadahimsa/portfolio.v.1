@@ -922,21 +922,53 @@ const horizontal = document.querySelector(".horizontal");
 const vertical = document.querySelector(".vertical");
 const dot = document.querySelector(".dot");
 
+// Inisialisasi awal agar posisi .dot bener-bener pas di tengah mouse dari awal
+gsap.set(dot, { xPercent: -50, yPercent: -50 });
+
 mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 let pos = { x: mouse.x, y: mouse.y };
 
+// Tambahkan variabel untuk menampung data rotasi dan kecepatannya
+let currentRotation = 0;
+let mouseVelocity = 0;
+
 window.addEventListener("mousemove", (e) => {
+  // Hitung seberapa cepat mouse bergerak (jarak antara posisi mouse baru dan posisi mouse sebelumnya)
+  const dx = e.clientX - mouse.x;
+  const dy = e.clientY - mouse.y;
+  
+  // Rumus pythagoras untuk dapat total jarak perpindahan dalam 1 frame
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // Set velocity berdasarkan jarak perpindahan mouse (kalau gerak cepat, putaran makin kencang)
+  // Lo bisa kalikan dengan angka tertentu (misal * 0.5 atau * 1.5) untuk atur sensitivitas kecepatan putarnya
+  mouseVelocity = distance * 7.5; 
+
   mouse.x = e.clientX;
   mouse.y = e.clientY;
 });
 
 gsap.ticker.add(() => {
+  // Easing untuk pergerakan posisi (bawaan kode lo)
   pos.x += (mouse.x - pos.x) * 0.075;
   pos.y += (mouse.y - pos.y) * 0.075;
 
+  // Efek Easing untuk Rotasi: perlahan kurangi velocity agar kalau mouse berhenti, putaran melambat smooth
+  mouseVelocity += (0 - mouseVelocity) * 0.04; 
+
+  // Tambahkan velocity saat ini ke rotasi kumulatif si .dot
+  currentRotation += mouseVelocity;
+
+  // Terapkan ke elemen HTML lewat GSAP
   gsap.set(horizontal, { top: pos.y });
   gsap.set(vertical, { left: pos.x });
-  gsap.set(dot, { x: pos.x, y: pos.y });
+  
+  // Update posisi sekaligus rotasi terbarunya
+  gsap.set(dot, { 
+    x: pos.x, 
+    y: pos.y, 
+    rotation: currentRotation 
+  });
 });
 
 // 1. Lenis Utama untuk Body (Meski 100vh, tetap biarkan ada)
