@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
       function activateCube() {
         project.isHovered = true;
         gsap.to(cube, {
-          z: 100,
+          z: 70,
           duration: 0.5,
           ease: "power3.out",
           overwrite: "auto",
