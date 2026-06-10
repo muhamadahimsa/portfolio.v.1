@@ -146,8 +146,8 @@ body.noscroll {
   position: relative;
   transform: translateY(100%);
   cursor: pointer;
-  color: var(--secondary);
-  background: var(--primary);
+  color: var(--primary);
+  /* background: var(--primary); */
   padding: .4rem .9rem;
   border-radius: 20px;
   font-size: 14px;
@@ -162,14 +162,14 @@ body.noscroll {
   bottom: 0;
   left: 0;
   content: '';
-  background: var(--secondary);
+  background: var(--primary);
   height: 0%;
   width: 100%;
   transition: all .3s ease;
   z-index: -1;
 }
 #enter-btn:hover{
-  color: var(--primary);
+  color: var(--secondary);
 }
 #enter-btn:hover::before{
   height: 100%;
