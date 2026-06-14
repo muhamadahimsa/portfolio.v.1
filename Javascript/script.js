@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const textureLoader = new THREE.TextureLoader(loadingManager); // Added manager
   const textureCache = {};
 
-  const defaultDisplayImg = "./Asset/Images/brutalist.webp";
+  const defaultDisplayImg = "./Asset/Images/home.webp";
 
   function loadTexture(src) {
     if (textureCache[src]) return textureCache[src];
