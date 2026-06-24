@@ -112,14 +112,14 @@ body.noscroll {
 }
 .loader-time {
   position: absolute;
-  bottom: 2rem;
-  right: 2rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   color: var(--secondary);
-  font-size: 10rem;
+  font-size: 2rem;
   font-weight: 600;
-  letter-spacing: -.5rem;
-  height: 10rem;
+  height: 2rem;
   line-height: 1;
   width: auto;
   overflow: hidden;
@@ -131,6 +131,7 @@ body.noscroll {
   position: relative;
   margin: 0;
   will-change: transform, top;
+  font-family: "Space Mono", monospace;
 }
 
 .enter-overlay{
@@ -155,6 +156,10 @@ body.noscroll {
   text-transform: uppercase;
   transition: all .3s ease;
   overflow: hidden;
+}
+#enter-btn p{
+  font-variant-numeric: tabular-nums;
+  font-family: "Space Mono", monospace;
 }
 #enter-btn::before{
   position: absolute;
@@ -215,7 +220,8 @@ nav {
 .open,
 .close {
   position: absolute;
-  font-size: 13px;
+  font-family: "Space Mono", monospace;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -.03rem;
   display: block;
@@ -270,9 +276,10 @@ nav {
   --ty: 110%;
   transform: translate(var(--tx), var(--ty));
   color: var(--secondary);
-  transition: 0.3s ease-out;
+  /* transition: 0.3s ease-out; */
   width: 100%;
   padding: 0 0 0.25rem 0;
+  font-family: "Space Mono", monospace;
   font-size: 1.35rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -289,14 +296,28 @@ nav {
 .nav-menu-wrapper a p {
   position: relative;
   transition: 0.3s ease-out;
+  font-variant-numeric: tabular-nums;
 }
-.nav-menu-wrapper a:hover {
+.nav-menu-wrapper a p span{
+  font-size: 1.35rem;
+}
+.nav-menu-wrapper a:hover span{
   color: var(--primary);
-  background-color: var(--secondary);
-}
-.nav-menu-wrapper a:hover span,
-.nav-menu-wrapper a:hover p {
   left: 10px;
+}
+.nav-menu-wrapper a::before{
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  content: '';
+  width: 100%;
+  height: 0%;
+  background: var(--secondary);
+  transition: 0.3s ease-out;
+  z-index: -1;
+}
+.nav-menu-wrapper a:hover::before{
+  height: 100%;
 }
 .nav-menu-footer{
   position: absolute;
@@ -310,9 +331,11 @@ nav {
   --tx: 0px;
   --ty: 110%;
   transform: translate(var(--tx), var(--ty));
-  font-size: 12px;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
   font-weight: 600;
-  line-height: 1;
+  text-transform: uppercase;
+  line-height: 1.2;
 }
 .nav-menu-footer-wrapper{
   margin-bottom: 1rem;

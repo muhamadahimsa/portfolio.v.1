@@ -238,6 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const projectsA = document.querySelectorAll(".project");
   const projectsContainer = document.querySelector(".projects");
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?0123456789";
 
   mouse = { x: 0, y: 0 };
   let target = { x: 0, y: 0 };
@@ -251,6 +252,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!cube || sides.length < 4) return;
 
+      // --- 1. PROSES SPLITTING TEXT (SAMA PERSIS DENGAN NAV-MENU) ---
+      const originalText = sides[0].innerText;
+      const textLength = originalText.length;
+
+      let splitHTML = "";
+      for (let i = 0; i < textLength; i++) {
+        if (originalText[i] === " ") {
+          splitHTML += `<span>&nbsp;</span>`;
+        } else {
+          splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+        }
+      }
+
+      // Suntik kode HTML span ke keempat sisi kubus
+      sides.forEach((h1) => (h1.innerHTML = splitHTML));
+
+      // Setup ukuran 3D Kubus dasar
       const width = project.getBoundingClientRect().width;
       const halfWidth = width / 2;
 
@@ -268,6 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       project.isHovered = false;
       project.currentSide = 0;
+      project.scrambleTween = null;
     });
 
     // MASTER CLOCK GLOBAL
@@ -284,38 +303,102 @@ document.addEventListener("DOMContentLoaded", () => {
         ease: "power3.inOut",
         stagger: 0.3,
       });
-
       gsap.delayedCall(2.5, triggerGlobalRotation);
     }
     gsap.delayedCall(1.5, triggerGlobalRotation);
 
-    // LOGIKA RESPONSIVE: HOVER (DESKTOP) & KLIK BERTAHAP (MOBILE)
+    // --- 2. LOGIKA INTERAKSI KURSOR DENGAN REPLIKASI RUMUS NAV-MENU DEWA ---
     projectsA.forEach((project) => {
       const cube = project.querySelector(".cube");
+      const sides = project.querySelectorAll("h1");
+      const originalText = sides[0].innerText;
+      const textLength = originalText.length;
 
-      // Fungsi untuk memajukan cube (Pop-Out)
       function activateCube() {
         project.isHovered = true;
+
+        // Maju secara 3D
         gsap.to(cube, {
-          z: 70,
+          z: 1,
           duration: 0.5,
           ease: "power3.out",
           overwrite: "auto",
         });
+
+        // Efek Scramble
+        if (project.scrambleTween) project.scrambleTween.kill();
+        let progressObj = { value: 0 };
+
+        project.scrambleTween = gsap.to(progressObj, {
+          value: 1,
+          duration: 0.6, // Durasi disamakan persis dengan nav-menu lo
+          ease: "power1.out", // Easing disamakan persis dengan nav-menu lo
+          onUpdate: () => {
+            // Rumus wavePosition disamakan persis dengan nav-menu lo
+            const wavePosition = progressObj.value * (textLength + 3);
+
+            // KUNCI KESEMBUHAN: Kita pecah perulangan langsung per sisi h1
+            sides.forEach((h1) => {
+              const letterSpans = h1.querySelectorAll("span[data-char]");
+
+              letterSpans.forEach((span, i) => {
+                const originalChar = span.getAttribute("data-char");
+
+                // Logika matematika murni 1:1 dari nav-menu lo, bro!
+                if (i < wavePosition - 3.5) {
+                  span.innerText = originalChar;
+                  span.style.color = "var(--secondary)"; // Mengunci warna hitam di atas bg putih
+                } else if (i < wavePosition) {
+                  const randomChar =
+                    randomChars[Math.floor(Math.random() * randomChars.length)];
+                  span.innerText = randomChar;
+                  span.style.color = "var(--blue)"; // Flashing biru saat ngacak
+                } else {
+                  span.innerText = originalChar;
+                  span.style.color = "var(--primary)"; // Warna awal abu-abu
+                }
+              });
+            });
+          },
+          onComplete: () => {
+            sides.forEach((h1) => {
+              h1.querySelectorAll("span[data-char]").forEach((span) => {
+                span.innerText = span.getAttribute("data-char");
+                span.style.color = "var(--secondary)";
+              });
+            });
+          },
+        });
       }
 
-      // Fungsi untuk memundurkan cube (Pop-In)
       function deactivateCube() {
         project.isHovered = false;
+
         gsap.to(cube, {
           z: 0,
           duration: 0.5,
           ease: "power3.out",
           overwrite: "auto",
         });
+
+        if (project.scrambleTween) project.scrambleTween.kill();
+
+        sides.forEach((h1) => {
+          const letterSpans = h1.querySelectorAll("span[data-char]");
+          letterSpans.forEach((span, i) => {
+            span.innerText = span.getAttribute("data-char");
+            gsap.to(span, {
+              color: "var(--primary)",
+              duration: 0.3,
+              delay: i * 0.02, // Efek riak mundur halus dari nav-menu lo
+              ease: "power2.out",
+              overwrite: "auto",
+            });
+          });
+        });
       }
 
-      // Event Desktop (Hanya jalan jika layar di atas 576px)
+      // Bind Event
       project.addEventListener("mouseenter", () => {
         if (window.innerWidth > 576) activateCube();
       });
@@ -324,40 +407,34 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.innerWidth > 576) deactivateCube();
       });
 
-      // Handle Klik khusus Mobile & Desktop
       project.addEventListener("click", (e) => {
-        // Cek apakah device sedang berada di mode mobile
         if (window.innerWidth <= 576) {
-          // Jika kubus ini belum aktif/belum pop-out sebelumnya
           if (!project.isHovered) {
-            e.preventDefault(); // Tahan dulu link href-nya biar gak langsung pindah halaman
-
-            // Mundurkan semua kubus lain terlebih dahulu (Reset yang lain)
+            e.preventDefault();
             projectsA.forEach((p) => {
               if (p !== project && p.isHovered) {
-                const c = p.querySelector(".cube");
+                const otherCube = p.querySelector(".cube");
                 p.isHovered = false;
-                gsap.to(c, {
+                gsap.to(otherCube, {
                   z: 0,
                   duration: 0.5,
                   ease: "power3.out",
                   overwrite: "auto",
                 });
+                p.querySelectorAll("h1 span[data-char]").forEach(
+                  (s) => (s.style.color = "var(--primary)"),
+                );
               }
             });
-
-            // Aktifkan kubus yang baru diklik ini
             activateCube();
           }
-          // Jika klik kedua kalinya pada kubus yang sama (sudah pop-out), biarkan link href berjalan normal!
         }
       });
     });
 
-    // LOGIKA PARALLAX 3D TILT CONTAINER (Hanya diaktifkan untuk Desktop)
+    // PARALLAX TILT CONTAINER (Tetap seperti kemarin)
     window.addEventListener("mousemove", (e) => {
-      if (window.innerWidth <= 576) return; // Skip di mobile biar gak pusing layarnya gerak-gerak
-
+      if (window.innerWidth <= 576) return;
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       mouse.x = (e.clientX - centerX) / centerX;
@@ -368,13 +445,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.innerWidth > 576) {
         target.x += (mouse.x - target.x) * 0.08;
         target.y += (mouse.y - target.y) * 0.08;
-
-        const rotateX = target.y * -15;
-        const rotateY = target.x * 15;
-
-        gsap.set(projectsContainer, { rotationX: rotateX, rotationY: rotateY });
+        gsap.set(projectsContainer, {
+          rotationX: target.y * -15,
+          rotationY: target.x * 15,
+        });
       } else {
-        // Reset kemiringan di mobile agar tegak lurus rapi
         gsap.set(projectsContainer, { rotationX: 0, rotationY: 0 });
       }
     });
@@ -576,3 +651,89 @@ document.addEventListener("DOMContentLoaded", () => {
   adjustCamera();
   window.addEventListener("resize", adjustCamera);
 });
+
+function initEnterBtnScramble() {
+  const enterBtn = document.getElementById("enter-btn");
+  if (!enterBtn) return;
+
+  const pTag = enterBtn.querySelector("p");
+  if (!pTag) return;
+
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+  const originalText = pTag.innerText;
+  const textLength = originalText.length;
+
+  // --- 1. PROSES SPLITTING TEXT (Pecah teks jadi span per huruf) ---
+  let splitHTML = "";
+  for (let i = 0; i < textLength; i++) {
+    // Pertahankan spasi agar layout kata tidak berantakan saat diacak
+    if (originalText[i] === " ") {
+      splitHTML += `<span>&nbsp;</span>`;
+    } else {
+      splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+    }
+  }
+  pTag.innerHTML = splitHTML;
+
+  const letterSpans = pTag.querySelectorAll("span[data-char]");
+  let enterTween = null;
+
+  // --- 2. LOGIKA MOUSEENTER (Ombak Glitch Biru Meluncur) ---
+  enterBtn.addEventListener("mouseenter", () => {
+    if (enterTween) enterTween.kill();
+
+    let progressObj = { value: 0 };
+
+    enterTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.6, // Durasi 0.6s pas banget buat aliran teks 14 karakter ini
+      ease: "power1.out",
+      onUpdate: () => {
+        // Kita beri offset + 3 agar ombak meluncur mulus sampai huruf terakhir selesai
+        const wavePosition = progressObj.value * (textLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            span.style.color = "var(--primary)"; // Selesai ngacak, matang jadi warna terang
+          } else if (i < wavePosition) {
+            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak
+          } else {
+            span.innerText = originalChar;
+            span.style.color = "var(--secondary)"; // Warna dasar/awal (Hitam)
+          }
+        });
+      },
+      onComplete: () => {
+        // Kunci kondisi akhir biar gak ada huruf yang tertinggal ngacak
+        letterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = "var(--primary)";
+        });
+      }
+    });
+  });
+
+  // --- 3. LOGIKA MOUSELEAVE (Rontok Warna Domino Balik ke Default) ---
+  enterBtn.addEventListener("mouseleave", () => {
+    if (enterTween) enterTween.kill();
+
+    letterSpans.forEach((span, i) => {
+      span.innerText = span.getAttribute("data-char");
+      gsap.to(span, {
+        color: "var(--secondary)", // Balik ke warna semula pas kursor keluar
+        duration: 0.3,
+        delay: i * 0.02, // Efek domino rontok dari depan ke belakang khas lo!
+        ease: "power2.out",
+        overwrite: "auto"
+      });
+    });
+  });
+}
+
+// Jalankan fungsinya setelah DOM siap
+document.addEventListener("DOMContentLoaded", initEnterBtnScramble);

@@ -32,7 +32,8 @@ canvas {
   color: var(--primary);
   text-transform: uppercase;
   text-align: center;
-  font-size: 13px;
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
   font-weight: 500;
   pointer-events: none;
 }
@@ -83,8 +84,7 @@ canvas {
   left: 0;
   bottom: 0; 
   width: 100%;
-  height: var(--cube-depth, 100%); 
-  /* background: var(--primary, #fff); */
+  height: var(--cube-depth, 100%);
   transform-origin: bottom center;
   transform: rotateX(90deg);
 }
@@ -97,15 +97,13 @@ canvas {
   text-align: center;
   letter-spacing: -0.05rem;
   font-weight: 800;
-  font-family: "General";
+  font-family: "Space Mono", monospace;
   line-height: 100%;
   letter-spacing: -0.2rem;
-  transition: color 0.25s;
   color: var(--primary);
-  /* background: var(--primary); */
   white-space: nowrap;
   backface-visibility: hidden;
-  transition: .3s all ease;
+  transition: transform .3s ease;
   z-index: 1;
 }
 .project .ofh h1:not(:first-child) {
@@ -127,9 +125,6 @@ canvas {
 }
 .project:hover .ofh h1::before{
   height: 100%;
-}
-.project:hover .ofh h1{
-  color: var(--secondary);
 }
 
 /* Container Utama Kubus */
@@ -189,13 +184,13 @@ footer {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 1.5rem;
   z-index: 1;
   pointer-events: none;
 }
 .footer-wrapper p {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   line-height: 1;
   letter-spacing: -0.05rem;
@@ -254,13 +249,6 @@ p.time {
   }
   .footer-wrapper:nth-child(2) {
     text-align: end;
-  }
-
-  .loader-time{
-    bottom: 5rem;
-    font-size: 8rem;
-    height: 8rem;
-    padding-right: .5rem;
   }
 }
 
