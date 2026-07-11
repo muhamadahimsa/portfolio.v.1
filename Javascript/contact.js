@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/DRACOLoader.js";
 import { MeshoptDecoder } from "https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.module.js";
 import Lenis from "https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm";
 import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
@@ -236,6 +237,13 @@ function initThree() {
 
 function loadModels() {
   const loader = new GLTFLoader();
+  
+  // 1. TAMBAHKAN SETUP DRACO DI SINI
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
+  loader.setDRACOLoader(dracoLoader); // Pasang ke GLTFLoader
+  
+  // Tetap pertahankan Meshopt decoder bawaan lo
   loader.setMeshoptDecoder(MeshoptDecoder);
 
   for (let i = 1; i <= 7; i++) {
@@ -253,7 +261,6 @@ function loadModels() {
       const maxDim = Math.max(size.x, size.y, size.z);
 
       // --- PENGGUNAAN CONFIG RESPONSIVE ---
-      // Menggunakan responsiveConfig.modelScale yang sudah diupdate di window resize
       const scaleFactor = responsiveConfig.modelScale / maxDim;
       model.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
@@ -266,25 +273,14 @@ function loadModels() {
       const wrapper = new THREE.Group();
       wrapper.add(model);
 
-      // --- FINE TUNING MANUAL (Tetap proporsional terhadap scaleFactor) ---
-      if (i === 1) {
-        model.scale.multiplyScalar(1.1);
-      }
-      if (i === 2) {
-        model.scale.multiplyScalar(0.7);
-      }
-      if (i === 3) {
-        model.scale.multiplyScalar(0.8);
-      }
-      if (i === 5) {
-        model.scale.multiplyScalar(0.9);
-      }
-      if (i === 6) {
-        model.scale.multiplyScalar(0.8);
-      }
-      if (i === 7) {
-        model.scale.multiplyScalar(0.7);
-      }
+      // --- FINE TUNING MANUAL ---
+      if (i === 1) model.scale.multiplyScalar(1.1);
+      if (i === 2) model.scale.multiplyScalar(0.7);
+      if (i === 3) model.scale.multiplyScalar(0.8);
+      if (i === 4) model.scale.multiplyScalar(0.8);
+      if (i === 5) model.scale.multiplyScalar(0.9);
+      if (i === 6) model.scale.multiplyScalar(0.8);
+      if (i === 7) model.scale.multiplyScalar(0.7);
 
       wrapper.visible = i === 1;
       scene.add(wrapper);
