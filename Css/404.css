@@ -62,6 +62,7 @@ canvas {
   color: var(--secondary);
   width: fit-content;
   padding: 1rem 2rem;
+  border-radius: 2px;
   text-transform: uppercase;
   text-decoration: none;
   overflow: hidden;
@@ -87,7 +88,8 @@ canvas {
 }
 .info-btn .--button .btn-text {
   font-weight: 700;
-  font-size: 13px;
+  font-family: "Space Mono", monospace;
+  font-size: 14px;
   transition: all 0.3s ease-out;
 }
 

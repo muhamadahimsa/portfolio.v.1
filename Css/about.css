@@ -103,8 +103,10 @@ p.info-title {
 .info-close {
   position: absolute;
   bottom: 4.5rem;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
   text-transform: uppercase;
   left: 50%;
   transform: translateX(-50%);
@@ -113,7 +115,7 @@ p.info-title {
   cursor: pointer;
   overflow: hidden;
   border-radius: 14px;
-  padding: 0.3rem 1rem;
+  padding: 0.2rem 1rem;
 }
 
 .infos {
@@ -183,6 +185,9 @@ p.info-title {
 .--button .btn-wrapper,
 .btn-text {
   will-change: transform;
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01rem;
 }
 .info-btn .--button .btn-wrapper {
   background: var(--white);
@@ -213,49 +218,6 @@ p.info-title {
   transform: rotate(270deg);
 }
 
-.dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 1rem;
-  height: 1rem;
-  /* transform: translate(-50%, -50%); */
-  pointer-events: none;
-  opacity: .7;
-  z-index: 5;
-}
-
-.crosshair {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.line {
-  position: absolute;
-  background-color: rgba(255, 255, 255, 0.25);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.horizontal {
-  height: 1px;
-  width: 100%;
-  top: 50%;
-  left: 0;
-}
-
-.vertical {
-  width: 1px;
-  height: 100%;
-  top: 0;
-  left: 50%;
-}
-
 .hero-top {
   position: absolute;
   top: 0;
@@ -270,7 +232,9 @@ p.info-title {
 }
 h1 {
   text-transform: uppercase;
-  font-size: 2.5rem;
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 2.75rem;
   font-weight: 700;
   letter-spacing: -0.1rem;
 }
@@ -280,8 +244,9 @@ h1 {
   right: 0;
   padding: 2rem;
   color: var(--primary);
-  width: 31%;
   line-height: 1;
+  width: 35%;
+  text-align: end;
   pointer-events: none;
   z-index: 5;
 }

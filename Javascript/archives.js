@@ -1390,50 +1390,6 @@ window.addEventListener("mouseup", () => {
 });
 
 // --- LOGIKA MULTI-MAGNETIC BUTTONS ---
-const allButtons = document.querySelectorAll(".--button");
-
-allButtons.forEach((btnWrapper) => {
-  // Kita cari elemen link/button dan teks di dalamnya
-  const btn = btnWrapper.querySelector(".btn-wrapper");
-  // Jika tidak ada span .btn-text, dia akan gerakkan isi button apa adanya
-  const btnText = btn.querySelectorAll(".btn-text") || btn;
-
-  btn.addEventListener("mousemove", (e) => {
-    const rect = btn.getBoundingClientRect();
-
-    // Hitung posisi mouse relatif terhadap titik tengah button
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-
-    // Efek Magnetic: Button mengikuti mouse (power 0.3)
-    gsap.to(btn, {
-      x: x * 0.3,
-      y: y * 0.3,
-      duration: 0.6,
-      ease: "power2.out",
-    });
-
-    // Efek Parallax: Teks mengikuti lebih pelan (power 0.1)
-    // Ini yang bikin efek high-end karena ada kedalaman visual
-    gsap.to(btnText, {
-      x: x * 0.1,
-      y: y * 0.1,
-      duration: 0.6,
-      ease: "power2.out",
-    });
-  });
-
-  btn.addEventListener("mouseleave", () => {
-    // Kembalikan button & teks ke posisi semula (Elastic Bounce)
-    gsap.to([btn, btnText], {
-      x: 0,
-      y: 0,
-      duration: 1,
-      ease: "elastic.out(1, 0.3)",
-    });
-  });
-});
-
 document.addEventListener("DOMContentLoaded", () => {
   const btnTexts = document.querySelectorAll(".btn-text");
   const btnActive = document.querySelector(".btn-active");
@@ -1460,6 +1416,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // 4. Update class warna teks
     btnTexts.forEach((btn) => btn.classList.remove("active-text"));
     element.classList.add("active-text");
+
+    btnTexts.forEach((btn) => {
+      // Cek apakah tombol ini yang baru saja memegang class aktif
+      const isNowActive = btn.classList.contains("active-text");
+
+      // Ambil span huruf di dalam tombol ini (kalau proses splitting sudah jalan)
+      const letterSpans = btn.querySelectorAll("span[data-char]");
+
+      if (letterSpans.length > 0) {
+        gsap.to(letterSpans, {
+          color: isNowActive ? "var(--primary)" : "var(--secondary)",
+          duration: 0.3,
+          ease: "power2.out",
+          overwrite: "auto", // Biar gak tabrakan kalau user ngeklik pas lagi di-hover
+        });
+      }
+    });
   }
 
   // Set posisi awal (Globe) tanpa animasi biar nggak loncat saat page load
@@ -1479,5 +1452,118 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+function initArchivesBtnScramble() {
+  const asciiBtn = document.querySelector(".archives-btn");
+  if (!asciiBtn) return;
+
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+  const btnTexts = asciiBtn.querySelectorAll(".btn-text");
+
+  // --- 1. PROSES SPLITTING TEXT (Img & Ascii) ---
+  btnTexts.forEach((btn) => {
+    const originalText = btn.innerText;
+    const textLength = originalText.length;
+
+    let splitHTML = "";
+    for (let i = 0; i < textLength; i++) {
+      if (originalText[i] === " ") {
+        splitHTML += `<span>&nbsp;</span>`;
+      } else {
+        splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+      }
+    }
+    btn.innerHTML = splitHTML;
+
+    // Inisialisasi warna awal berdasarkan class state `.active-text` saat page load
+    const letterSpans = btn.querySelectorAll("span[data-char]");
+    const isActive = btn.classList.contains("active-text");
+
+    letterSpans.forEach((span) => {
+      span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
+    });
+
+    // Simpan object tween di memory elemen masing-masing agar tidak saling tabrakan
+    btn.scrambleTween = null;
+
+    // --- 2. LOGIKA HOVER PER BUTTON TEXT (`mouseenter`) ---
+    btn.addEventListener("mouseenter", () => {
+      if (btn.scrambleTween) btn.scrambleTween.kill();
+
+      const letterSpans = btn.querySelectorAll("span[data-char]");
+      const textLength = letterSpans.length;
+      let progressObj = { value: 0 };
+
+      btn.scrambleTween = gsap.to(progressObj, {
+        value: 1,
+        duration: 0.4, // Durasi sedikit lebih cepat karena katanya pendek (Img / Ascii)
+        ease: "power1.out",
+        onUpdate: () => {
+          const wavePosition = progressObj.value * (textLength + 3);
+
+          letterSpans.forEach((span, i) => {
+            const originalChar = span.getAttribute("data-char");
+
+            if (i < wavePosition - 2.5) {
+              span.innerText = originalChar;
+              // Pas matang, cek real-time apakah tombol ini yang lagi memegang class active
+              if (btn.classList.contains("active-text")) {
+                span.style.color = "var(--primary)"; // Tetap putih di atas bg hitam
+              } else {
+                span.style.color = "var(--secondary)"; // Tetap hitam di atas bg transparan/putih
+              }
+            } else if (i < wavePosition) {
+              const randomChar =
+                randomChars[Math.floor(Math.random() * randomChars.length)];
+              span.innerText = randomChar;
+              span.style.color = "var(--blue)"; // Efek kilatan biru cyberpunk pas ngacak!
+            } else {
+              // Menjaga warna sebelum terjangkau ombak scramble
+              if (btn.classList.contains("active-text")) {
+                span.style.color = "var(--primary)";
+              } else {
+                span.style.color = "var(--secondary)";
+              }
+            }
+          });
+        },
+        onComplete: () => {
+          // Kunci aman kondisi akhir text asli
+          letterSpans.forEach((span) => {
+            span.innerText = span.getAttribute("data-char");
+            span.style.color = btn.classList.contains("active-text")
+              ? "var(--primary)"
+              : "var(--secondary)";
+          });
+        },
+      });
+    });
+
+    // --- 3. LOGIKA KURSOR KELUAR PER BUTTON TEXT (`mouseleave`) ---
+    btn.addEventListener("mouseleave", () => {
+      if (btn.scrambleTween) btn.scrambleTween.kill();
+
+      const letterSpans = btn.querySelectorAll("span[data-char]");
+
+      letterSpans.forEach((span, i) => {
+        span.innerText = span.getAttribute("data-char");
+
+        // Kembalikan warna asli secara domino berdasarkan status aktifnya
+        gsap.to(span, {
+          color: btn.classList.contains("active-text")
+            ? "var(--primary)"
+            : "var(--secondary)",
+          duration: 0.25,
+          delay: i * 0.02,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      });
+    });
+  });
+}
+
+// Jalankan fungsinya
+document.addEventListener("DOMContentLoaded", initArchivesBtnScramble);
 
 window.dispatchEvent(new Event("threejsReady"));

@@ -794,56 +794,120 @@ let currentVideoElement = null;
 let currentModalType = null; // 'video' atau 'gallery'
 let pausedOriginalVideo = null;
 
-// Variable untuk Gallery Cursor
+// =========================================================================
+// VARIABLE BARU & REVISI UNTUK SCRAMBLE GALLERY CURSOR
+// =========================================================================
 const galleryCursor = document.querySelector(".gallery-cursor");
 const galleryCursorText = galleryCursor.querySelector("p");
-let mouseX = 0,
-  mouseY = 0;
-let cursorX = 0,
-  cursorY = 0;
+const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
 
-// Tracking Mouse untuk Gallery Cursor
+let mouseX = 0, mouseY = 0;
+let galleryCursorX = 0, galleryCursorY = 0;
+let activeCursors = []; 
+
+// KUNCI STATE: Menyimpan posisi kursor terakhir ('left', 'right', atau null di awal)
+let currentDirection = null; 
+let cursorTween = null;
+
+// Fungsi Helper untuk memecah teks target ("Prev" atau "Next") menjadi span
+function splitCursorText(text) {
+  let splitHTML = "";
+  for (let i = 0; i < text.length; i++) {
+    splitHTML += `<span class="cursor-char" data-char="${text[i]}">${text[i]}</span>`;
+  }
+  galleryCursorText.innerHTML = splitHTML;
+}
+
+// Jalankan split awal biar strukturnya siap dari awal page load
+splitCursorText("Next");
+
+// Fungsi Master menembakkan ombak scramble saat arah berubah
+function triggerCursorScramble(targetText) {
+  if (cursorTween) cursorTween.kill();
+
+  // 1. Suntik teks baru dan pecah jadi span huruf
+  splitCursorText(targetText);
+
+  const letterSpans = galleryCursorText.querySelectorAll("span.cursor-char");
+  const textLength = letterSpans.length;
+  let progressObj = { value: 0 };
+
+  // 2. Tembakkan ombak biru khas cyberpunk lo
+  cursorTween = gsap.to(progressObj, {
+    value: 1,
+    duration: 0.4, // Durasi 0.4s sangat ideal buat kata pendek (Prev/Next) agar tetap responsif
+    ease: "power1.out",
+    onUpdate: () => {
+      const wavePosition = progressObj.value * (textLength + 3);
+
+      letterSpans.forEach((span, i) => {
+        const originalChar = span.getAttribute("data-char");
+
+        if (i < wavePosition - 2.5) {
+          span.innerText = originalChar;
+          span.style.color = "var(--primary)"; // Selesai ngacak, matang ke warna utama terang kursor lo
+        } else if (i < wavePosition) {
+          const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+          span.innerText = randomChar;
+          span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak meluncur
+        } else {
+          span.innerText = originalChar;
+          span.style.color = "var(--primary)"; // Warna default sebelum terkejar ombak
+        }
+      });
+    },
+    onComplete: () => {
+      letterSpans.forEach((span) => {
+        span.innerText = span.getAttribute("data-char");
+        span.style.color = "var(--primary)";
+      });
+    }
+  });
+}
+
+// =========================================================================
+// TRACKING MOUSE (Hanya ada 1 Event Listener biar rapi & gak double)
+// =========================================================================
 window.addEventListener("mousemove", (e) => {
   mouseX = e.clientX;
   mouseY = e.clientY;
 
   if (modal.classList.contains("gallery-active")) {
+    // Tentukan apakah posisi mouse berada di area kiri layar
     const isLeft = mouseX < window.innerWidth / 2;
-    galleryCursorText.textContent = isLeft ? "Prev" : "Next";
+    const newDirection = isLeft ? "left" : "right";
+
+    // KUNCI UTAMA: Hanya tembak scramble JIKA arahnya BENAR-BENAR BERUBAH dari sebelumnya
+    if (newDirection !== currentDirection) {
+      currentDirection = newDirection; // Update state arah saat ini
+      
+      const targetText = isLeft ? "Prev" : "Next";
+      triggerCursorScramble(targetText);
+    }
+  } else {
+    // Reset state jika modal gallery ditutup, biar pas dibuka lagi efeknya langsung segar
+    currentDirection = null;
   }
 });
 
-// Variable untuk sinkronisasi posisi mouse global
-let galleryCursorX = 0,
-  galleryCursorY = 0;
-let activeCursors = []; // Array untuk menampung kursor project preview yang aktif
-
-window.addEventListener("mousemove", (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
-  if (modal.classList.contains("gallery-active")) {
-    const isLeft = mouseX < window.innerWidth / 2;
-    galleryCursorText.textContent = isLeft ? "Prev" : "Next";
-  }
-});
-
+// =========================================================================
+// MASTER TICKER ANIMASI LERP (Biarkan tetap seperti kode asli lo, bro)
+// =========================================================================
 gsap.ticker.add(() => {
   const lerpFactor = 0.15;
   const dt = 1.0 - Math.pow(1.0 - lerpFactor, gsap.ticker.deltaRatio());
 
-  // A. UPDATE GALLERY CURSOR (Hanya jalan saat modal gallery aktif)
+  // A. UPDATE GALLERY CURSOR 
   if (modal.classList.contains("gallery-active")) {
     galleryCursorX += (mouseX - galleryCursorX) * dt;
     galleryCursorY += (mouseY - galleryCursorY) * dt;
     gsap.set(galleryCursor, { x: galleryCursorX, y: galleryCursorY });
   }
 
-  // B. UPDATE PREVIEW CURSORS (Hanya jalan kalau modal TERTUTUP)
+  // B. UPDATE PREVIEW CURSORS 
   if (!modal.classList.contains("active")) {
     activeCursors.forEach((c) => {
       const previewLerp = 0.12;
-      // Gunakan nilai mouse internal masing-masing kursor
       c.pos.x += (c.mouse.x - c.pos.x) * previewLerp;
       c.pos.y += (c.mouse.y - c.pos.y) * previewLerp;
       gsap.set(c.cursor, { x: c.pos.x, y: c.pos.y });
@@ -1221,87 +1285,98 @@ modalGalleryContainer.addEventListener("mouseleave", () => {
 // CINEMATIC CURSOR + "View Project"
 // ===============================
 const previews = document.querySelectorAll(".project-preview");
-
-// previews.forEach((preview) => {
-//   const cursor = document.createElement("div");
-//   cursor.classList.add("cursor");
-//   cursor.textContent = "View Project";
-//   preview.appendChild(cursor);
-
-//   gsap.set(cursor, {
-//     position: "absolute",
-//     top: 0,
-//     left: 0,
-//     pointerEvents: "none",
-//     xPercent: 5,
-//     yPercent: -95,
-//     clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-//   });
-
-//   const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
-//   let mouse = { x: 0, y: 0 };
-//   let pos = { x: 0, y: 0 };
-
-//   // Objek referensi kursor ini
-//   const cursorData = { cursor, mouse, pos };
-
-//   preview.addEventListener("mousemove", (e) => {
-//     const rect = preview.getBoundingClientRect();
-//     mouse.x = clamp(e.clientX - rect.left, 0, rect.width);
-//     mouse.y = clamp(e.clientY - rect.top, 0, rect.height);
-//   });
-
-//   preview.addEventListener("mouseenter", (e) => {
-//     const rect = preview.getBoundingClientRect();
-//     mouse.x = e.clientX - rect.left;
-//     mouse.y = e.clientY - rect.top;
-//     pos.x = mouse.x; // Langsung lompat ke posisi mouse biar gak telat
-//     pos.y = mouse.y;
-
-//     gsap.to(cursor, {
-//       clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-//       duration: 0.6,
-//       ease: "expo.out",
-//     });
-
-//     // Masukkan ke array ticker jika belum ada
-//     if (!activeCursors.includes(cursorData)) {
-//       activeCursors.push(cursorData);
-//     }
-//   });
-
-//   preview.addEventListener("mouseleave", () => {
-//     gsap.to(cursor, {
-//       clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-//       duration: 0.6,
-//       ease: "expo.out",
-//     });
-
-//     // Hapus dari array ticker SEGERA agar tidak diproses saat kursor tidak terlihat
-//     activeCursors = activeCursors.filter((c) => c !== cursorData);
-//   });
-// });
-
-// ===============================
-// CURSOR LEFT-PANEL (semua .box.--images)
 // ===============================
 const leftBoxes = document.querySelectorAll(".left-panel .box.--images");
 
 leftBoxes.forEach((box) => {
-  // Ambil elemen gambarnya secara spesifik di dalam box ini
   const imgContainer = box.querySelector(".box-img");
+  const pTags = box.querySelectorAll(".box-text p");
+  
+  if (pTags.length === 0) return;
 
-  // Mouse enter
+  // --- 1. PROSES SPLITTING TEXT TERISOLASI ---
+  pTags.forEach((p) => {
+    const arrowSpan = p.querySelector("span");
+    let textToSplit = p.innerText;
+
+    // Amankan teks panah agar tidak ikut di-split
+    if (arrowSpan) {
+      textToSplit = textToSplit.replace(arrowSpan.innerText, "").trim();
+    }
+
+    let splitHTML = "";
+    for (let i = 0; i < textToSplit.length; i++) {
+      if (textToSplit[i] === " ") {
+        splitHTML += `<span>&nbsp;</span>`;
+      } else {
+        // Beri class pembatas 'scramble-char' agar tidak memicu style CSS global lain
+        splitHTML += `<span class="scramble-char" data-char="${textToSplit[i]}">${textToSplit[i]}</span>`;
+      }
+    }
+
+    // Gabungkan kembali teks dengan panah kotak hitam aslinya
+    if (arrowSpan) {
+      p.innerHTML = splitHTML + ` <span class="arrow-icon">${arrowSpan.innerHTML}</span>`;
+    } else {
+      p.innerHTML = splitHTML;
+    }
+  });
+
+  // Targetkan secara spesifik HANYA span yang bertugas untuk di-scramble (mengabaikan panah)
+  const allLetterSpans = box.querySelectorAll(".box-text p span.scramble-char");
+  
+  // Set warna awal huruf menjadi default (var(--secondary) / Hitam bawaan desain lo)
+  allLetterSpans.forEach(span => span.style.color = "var(--secondary)");
+
+  let scrambleTween = null;
+
+  // --- 2. MOUSE ENTER ---
   box.addEventListener("mouseenter", () => {
     gsap.to(imgContainer, {
       height: "13rem",
-      duration: 0.8, // Sedikit dipercepat biar terasa responsif
+      duration: 0.8,
       ease: "power4.out",
-      overwrite: "auto", // Mencegah glitch kalau mouse keluar-masuk cepet banget
+      overwrite: "auto",
+    });
+
+    if (scrambleTween) scrambleTween.kill();
+    let progressObj = { value: 0 };
+
+    scrambleTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.6,
+      ease: "power1.out",
+      onUpdate: () => {
+        allLetterSpans.forEach((span) => {
+          const i = Array.from(span.parentNode.children).indexOf(span);
+          const totalCharsInP = span.parentNode.querySelectorAll("span.scramble-char").length;
+          const wavePosition = progressObj.value * (totalCharsInP + 3);
+
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            span.style.color = "var(--secondary)"; // Tetap hitam pas matang (karena bg card lo putih)
+          } else if (i < wavePosition) {
+            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak
+          } else {
+            span.innerText = originalChar;
+            span.style.color = "var(--secondary)"; // Tetap hitam kalem
+          }
+        });
+      },
+      onComplete: () => {
+        allLetterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = "var(--secondary)";
+        });
+      }
     });
   });
 
-  // Mouse leave
+  // --- 3. MOUSE LEAVE ---
   box.addEventListener("mouseleave", () => {
     gsap.to(imgContainer, {
       height: "16.25rem",
@@ -1309,7 +1384,204 @@ leftBoxes.forEach((box) => {
       ease: "power4.out",
       overwrite: "auto",
     });
+
+    if (scrambleTween) scrambleTween.kill();
+
+    allLetterSpans.forEach((span) => {
+      const i = Array.from(span.parentNode.children).indexOf(span);
+      span.innerText = span.getAttribute("data-char");
+      
+      gsap.to(span, {
+        color: "var(--secondary)", 
+        duration: 0.3,
+        delay: i * 0.015, // Efek riak mundur halus
+        ease: "power2.out",
+        overwrite: "auto"
+      });
+    });
   });
 });
+
+function initLinkScramble() {
+  const navLinks = document.querySelectorAll(".--link");
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+
+  navLinks.forEach((link) => {
+    const pTag = link.querySelector("p");
+    if (!pTag) return;
+
+    const originalText = pTag.innerText;
+    const textLength = originalText.length;
+    
+    // 1. SPLIT TEXT: Pecah teks asli menjadi struktur span per huruf
+    // Kita beri custom attribute data-char agar gampang kita manipulasi nanti
+    let splitHTML = "";
+    for (let i = 0; i < textLength; i++) {
+      // Hilangkan spasi dari efek scramble agar layout tidak rusak
+      if (originalText[i] === " ") {
+        splitHTML += `<span>&nbsp;</span>`;
+      } else {
+        splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+      }
+    }
+    pTag.innerHTML = splitHTML;
+
+    // Ambil semua elemen span huruf yang baru saja dibuat
+    const letterSpans = pTag.querySelectorAll("span[data-char]");
+    let scrambleTween = null;
+
+    link.addEventListener("mouseenter", () => {
+      if (scrambleTween) scrambleTween.kill();
+
+      let progressObj = { value: 0 };
+
+      scrambleTween = gsap.to(progressObj, {
+        value: 1,
+        duration: 0.6, // Sikit dinaikkan jadi 0.6s biar durasi ngacaknya lebih puas dilihat
+        ease: "power1.out",
+        onUpdate: () => {
+          // Kita kalikan dengan textLength + rentang offset (misal + 3) 
+          // agar ombak biru berjalan duluan di depan, baru disusul ombak abu-abu
+          const wavePosition = progressObj.value * (textLength + 3); 
+
+          letterSpans.forEach((span, i) => {
+            const originalChar = span.getAttribute("data-char");
+
+            // 1. JIKA OMBAK BLUE SUDAH LEWAT JAUH (i < wavePosition - 2.5)
+            // Huruf matang sempurna -> warna --primary + huruf asli
+            if (i < wavePosition - 1.5) {
+              span.innerText = originalChar;
+              span.style.color = "var(--primary)";
+            } 
+            // 2. JIKA HURUF BERADA DI DALAM AREA OMBAK (i < wavePosition)
+            // Di area inilah huruf DIPAKSA NGACAK lebih lama -> warna --blue + karakter acak
+            else if (i < wavePosition) {
+              const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+              span.innerText = randomChar;
+              span.style.color = "var(--blue)";
+            } 
+            // 3. JIKA OMBAK BELUM SAMPAI (i >= wavePosition)
+            // Huruf antre menunggu giliran -> warna --secondary + huruf asli
+            else {
+              span.innerText = originalChar;
+              span.style.color = "var(--secondary)";
+            }
+          });
+        },
+        onComplete: () => {
+          // Kunci total ke kondisi akhir setelah timeline beres
+          letterSpans.forEach((span) => {
+            span.innerText = span.getAttribute("data-char");
+            span.style.color = "var(--primary)";
+          });
+        }
+      });
+    });
+
+    link.addEventListener("mouseleave", () => {
+      if (scrambleTween) scrambleTween.kill();
+      
+      // RESET TOTAL: Kembalikan semua huruf ke warna `--secondary` (Hitam) dengan transisi halus
+      letterSpans.forEach((span, i) => {
+        span.innerText = span.getAttribute("data-char");
+        gsap.to(span, { 
+          color: "var(--secondary)", 
+          duration: 0.3, 
+          delay: i * 0.02, // Efek riak mundur halus dari depan ke belakang saat mouse keluar
+          ease: "power2.out" 
+        });
+      });
+    });
+  });
+}
+// Jalankan fungsinya
+document.addEventListener("DOMContentLoaded", initLinkScramble);
+
+function initCloseBtnScramble() {
+  const enterBtn = document.querySelector(".modal-close");
+  if (!enterBtn) return;
+
+  const pTag = enterBtn.querySelector("p");
+  if (!pTag) return;
+
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+  const originalText = pTag.innerText;
+  const textLength = originalText.length;
+
+  // --- 1. PROSES SPLITTING TEXT (Pecah teks jadi span per huruf) ---
+  let splitHTML = "";
+  for (let i = 0; i < textLength; i++) {
+    // Pertahankan spasi agar layout kata tidak berantakan saat diacak
+    if (originalText[i] === " ") {
+      splitHTML += `<span>&nbsp;</span>`;
+    } else {
+      splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+    }
+  }
+  pTag.innerHTML = splitHTML;
+
+  const letterSpans = pTag.querySelectorAll("span[data-char]");
+  let enterTween = null;
+
+  // --- 2. LOGIKA MOUSEENTER (Ombak Glitch Biru Meluncur) ---
+  enterBtn.addEventListener("mouseenter", () => {
+    if (enterTween) enterTween.kill();
+
+    let progressObj = { value: 0 };
+
+    enterTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.6, // Durasi 0.6s pas banget buat aliran teks 14 karakter ini
+      ease: "power1.out",
+      onUpdate: () => {
+        // Kita beri offset + 3 agar ombak meluncur mulus sampai huruf terakhir selesai
+        const wavePosition = progressObj.value * (textLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            span.style.color = "var(--primary)"; // Selesai ngacak, matang jadi warna terang
+          } else if (i < wavePosition) {
+            const randomChar =
+              randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak
+          } else {
+            span.innerText = originalChar;
+            span.style.color = "var(--primary)"; // Warna dasar/awal (Hitam)
+          }
+        });
+      },
+      onComplete: () => {
+        // Kunci kondisi akhir biar gak ada huruf yang tertinggal ngacak
+        letterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = "var(--primary)";
+        });
+      },
+    });
+  });
+
+  // --- 3. LOGIKA MOUSELEAVE (Rontok Warna Domino Balik ke Default) ---
+  enterBtn.addEventListener("mouseleave", () => {
+    if (enterTween) enterTween.kill();
+
+    letterSpans.forEach((span, i) => {
+      span.innerText = span.getAttribute("data-char");
+      gsap.to(span, {
+        color: "var(--primary)", // Balik ke warna semula pas kursor keluar
+        duration: 0.3,
+        delay: i * 0.02, // Efek domino rontok dari depan ke belakang khas lo!
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    });
+  });
+}
+
+// Jalankan fungsinya setelah DOM siap
+document.addEventListener("DOMContentLoaded", initCloseBtnScramble);
 
 window.dispatchEvent(new Event("threejsReady"));

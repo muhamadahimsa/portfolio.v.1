@@ -282,49 +282,92 @@ if (hero) {
   });
 }
 
-// --- LOGIKA MULTI-MAGNETIC BUTTONS ---
-const allButtons = document.querySelectorAll(".--button");
+// --- LOGIKA SCRAMBLE BUTTONS ---
+function initEnterBtnScramble() {
+  const enterBtn = document.querySelector(".info-btn");
+  if (!enterBtn) return;
 
-allButtons.forEach((btnWrapper) => {
-  // Kita cari elemen link/button dan teks di dalamnya
-  const btn = btnWrapper.querySelector(".btn-wrapper");
-  // Jika tidak ada span .btn-text, dia akan gerakkan isi button apa adanya
-  const btnText = btn.querySelector(".btn-text") || btn;
+  const pTag = enterBtn.querySelector("span");
+  if (!pTag) return;
 
-  btn.addEventListener("mousemove", (e) => {
-    const rect = btn.getBoundingClientRect();
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+  const originalText = pTag.innerText;
+  const textLength = originalText.length;
 
-    // Hitung posisi mouse relatif terhadap titik tengah button
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
+  // --- 1. PROSES SPLITTING TEXT (Pecah teks jadi span per huruf) ---
+  let splitHTML = "";
+  for (let i = 0; i < textLength; i++) {
+    // Pertahankan spasi agar layout kata tidak berantakan saat diacak
+    if (originalText[i] === " ") {
+      splitHTML += `<span>&nbsp;</span>`;
+    } else {
+      splitHTML += `<span data-char="${originalText[i]}">${originalText[i]}</span>`;
+    }
+  }
+  pTag.innerHTML = splitHTML;
 
-    // Efek Magnetic: Button mengikuti mouse (power 0.3)
-    gsap.to(btn, {
-      x: x * 0.3,
-      y: y * 0.3,
-      duration: 0.6,
-      ease: "power2.out",
-    });
+  const letterSpans = pTag.querySelectorAll("span[data-char]");
+  let enterTween = null;
 
-    // Efek Parallax: Teks mengikuti lebih pelan (power 0.1)
-    // Ini yang bikin efek high-end karena ada kedalaman visual
-    gsap.to(btnText, {
-      x: x * 0.1,
-      y: y * 0.1,
-      duration: 0.6,
-      ease: "power2.out",
+  // --- 2. LOGIKA MOUSEENTER (Ombak Glitch Biru Meluncur) ---
+  enterBtn.addEventListener("mouseenter", () => {
+    if (enterTween) enterTween.kill();
+
+    let progressObj = { value: 0 };
+
+    enterTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.8, // Durasi 0.6s pas banget buat aliran teks 14 karakter ini
+      ease: "power1.out",
+      onUpdate: () => {
+        // Kita beri offset + 3 agar ombak meluncur mulus sampai huruf terakhir selesai
+        const wavePosition = progressObj.value * (textLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            span.style.color = "var(--secondary)"; // Selesai ngacak, matang jadi warna terang
+          } else if (i < wavePosition) {
+            const randomChar =
+              randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak
+          } else {
+            span.innerText = originalChar;
+            span.style.color = "var(--secondary)"; // Warna dasar/awal (Hitam)
+          }
+        });
+      },
+      onComplete: () => {
+        // Kunci kondisi akhir biar gak ada huruf yang tertinggal ngacak
+        letterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = "var(--secondary)";
+        });
+      },
     });
   });
 
-  btn.addEventListener("mouseleave", () => {
-    // Kembalikan button & teks ke posisi semula (Elastic Bounce)
-    gsap.to([btn, btnText], {
-      x: 0,
-      y: 0,
-      duration: 1,
-      ease: "elastic.out(1, 0.3)",
+  // --- 3. LOGIKA MOUSELEAVE (Rontok Warna Domino Balik ke Default) ---
+  enterBtn.addEventListener("mouseleave", () => {
+    if (enterTween) enterTween.kill();
+
+    letterSpans.forEach((span, i) => {
+      span.innerText = span.getAttribute("data-char");
+      gsap.to(span, {
+        color: "var(--secondary)", // Balik ke warna semula pas kursor keluar
+        duration: 0.3,
+        delay: i * 0.02, // Efek domino rontok dari depan ke belakang khas lo!
+        ease: "power2.out",
+        overwrite: "auto",
+      });
     });
   });
-});
+}
+
+// Jalankan fungsinya setelah DOM siap
+document.addEventListener("DOMContentLoaded", initEnterBtnScramble);
 
 window.dispatchEvent(new Event("threejsReady"));

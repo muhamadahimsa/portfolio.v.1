@@ -5,7 +5,8 @@ body {
   min-height: 100svh;
 
   background-color: var(--secondary);
-  font-family: "General";
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
   color: var(--primary);
 }
 
@@ -66,12 +67,14 @@ body {
   padding: 1rem;
   text-transform: uppercase;
 }
-.box-text p span{
+/* KODE BARU: Hanya berikan kotak hitam pada span yang punya class arrow-icon */
+.box-text p span.arrow-icon {
   background-color: var(--secondary);
   color: var(--primary);
   padding: .1rem .22rem .1rem .2rem;
   margin-left: .5rem;
   font-size: 11px;
+  display: inline-block; /* Tambahkan ini agar padding-nya rapi */
 }
 .box.--link {
   padding: 0.35rem 3rem;
@@ -102,7 +105,7 @@ body {
 .box .ofh p {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: -0.02rem;
+  letter-spacing: -0.01rem;
   text-transform: uppercase;
 }
 .content-title {
@@ -154,10 +157,12 @@ body {
   gap: 4rem;
   font-size: 16px;
   font-weight: 500;
+  font-family: "General";
   letter-spacing: -0.01rem;
   line-height: 1.4;
   margin-bottom: 1rem;
   text-align: justify;
+  pointer-events: none;
 }
 .category.active span {
   background: var(--secondary);
@@ -323,9 +328,12 @@ section {
   top: 1.5rem;
   right: 1.5rem;
   color: var(--primary);
-  background: var(--secondary);
+  background: none;
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: -0.03rem;
   padding: 0.5rem 1rem;
   border-radius: 2px;
   text-transform: uppercase;
@@ -335,23 +343,6 @@ section {
   overflow: hidden;
   z-index: 10001;
   scale: 0;
-}
-.modal-close::before {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  content: "";
-  width: 100%;
-  height: 0%;
-  background: var(--primary);
-  transition: 0.3s ease-out;
-  z-index: -1;
-}
-.modal-close:hover:before {
-  height: 100%;
-}
-.modal-close:hover {
-  color: var(--secondary);
 }
 
 /* Video Container Style */
@@ -455,7 +446,8 @@ section {
   border-radius: 2px;
   text-transform: uppercase;
   transition: transform 0.1s ease-out;
-  z-index: 10;
+  pointer-events: none;
+  z-index: 5000;
 }
 
 .left-panel-close {

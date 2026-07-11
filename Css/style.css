@@ -1,5 +1,5 @@
 body {
-  font-family: "General";
+  font-family: "Space Mono", monospace;
 }
 
 canvas {
@@ -44,6 +44,7 @@ canvas {
   cursor: pointer;
   position: relative;
   transform-style: preserve-3d;
+  cursor: pointer;
 }
 .project .ofh {
   overflow: visible;
@@ -111,20 +112,6 @@ canvas {
   top: 0;
   left: 0;
   width: 100%;
-}
-.project .ofh h1::before{
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  background: var(--primary);
-  width: 100%;
-  height: 0%;
-  transition: .3s all ease;
-  z-index: -1;
-}
-.project:hover .ofh h1::before{
-  height: 100%;
 }
 
 /* Container Utama Kubus */
@@ -242,7 +229,7 @@ p.time {
   }
 
   .footer-wrapper p {
-    font-size: 1.25rem;
+    font-size: 1rem;
     text-transform: uppercase;
     line-height: 1;
     letter-spacing: -0.05rem;

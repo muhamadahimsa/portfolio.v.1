@@ -201,6 +201,7 @@ nav {
   z-index: 20;
   display: flex;
   align-items: center;
+  border-radius: 2px;
 }
 .nav-btn .btn-container {
   display: flex;
@@ -221,9 +222,10 @@ nav {
 .close {
   position: absolute;
   font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: -.03rem;
+  letter-spacing: -.02rem;
   display: block;
   text-align: center;
   text-transform: uppercase;
@@ -262,6 +264,7 @@ nav {
   background: var(--white);
   pointer-events: none;
   opacity: 0;
+  border-radius: 2px;
 }
 .nav-menu-wrapper {
   padding: 1rem;
@@ -276,7 +279,7 @@ nav {
   --ty: 110%;
   transform: translate(var(--tx), var(--ty));
   color: var(--secondary);
-  /* transition: 0.3s ease-out; */
+  transition: 0.3s ease-out;
   width: 100%;
   padding: 0 0 0.25rem 0;
   font-family: "Space Mono", monospace;

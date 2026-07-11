@@ -90,6 +90,8 @@ canvas {
 }
 .archives-btn .btn-text {
   position: relative;
+  font-family: "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   font-size: 11px;
   padding: 0.5rem 1rem;

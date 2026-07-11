@@ -101,6 +101,58 @@ document.addEventListener("DOMContentLoaded", () => {
   const lerpedMouse = { x: 0, y: 0 };
   const clock = new THREE.Clock();
 
+  // --- LOGIKA GYROSCOPE UNTUK MOBILE ---
+  function initGyroscope() {
+    if (window.DeviceOrientationEvent) {
+      // Cek khusus untuk perangkat iOS (iPhone/iPad) yang butuh requestPermission
+      if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        // Karena butuh interaksi user, kita tembak izinnya saat pertama kali user nge-tap layar mobile
+        window.addEventListener(
+          "click",
+          function requestGyro() {
+            DeviceOrientationEvent.requestPermission()
+              .then((permissionState) => {
+                if (permissionState === "granted") {
+                  window.addEventListener(
+                    "deviceorientation",
+                    handleOrientation,
+                  );
+                }
+              })
+              .catch(console.error);
+
+            // Hapus listener ini setelah sekali klik agar tidak request berulang-ulang
+            window.removeEventListener("click", requestGyro);
+          },
+          { once: true },
+        );
+      } else {
+        // Untuk Android dan browser non-iOS bisa langsung pasang listener
+        window.addEventListener("deviceorientation", handleOrientation);
+      }
+    }
+  }
+
+  function handleOrientation(event) {
+    // gamma: kemiringan kiri-kanan (-90 sampai 90)
+    // beta: kemiringan depan-belakang (-180 sampai 180)
+    const x = event.gamma;
+    const y = event.beta;
+
+    // Kita batasi (clamp) dan normalisasi nilainya menjadi range -1 sampai 1
+    // Angka pembagi (misal 30) menentukan seberapa sensitif ayunan HP-nya
+    const maxTilt = 30;
+
+    gyro.x = Math.max(-1, Math.min(1, x / maxTilt));
+    gyro.y = Math.max(-1, Math.min(1, (y - 45) / maxTilt));
+    // Catatan: (y - 45) berasumsi user memegang HP agak miring 45 derajat saat melihat layar (posisi santai), bukan flat di meja.
+  }
+
+  // Jalankan fungsi inisialisasi gyro-nya
+  if (window.innerWidth <= 576) {
+    initGyroscope();
+  }
+
   function animate() {
     requestAnimationFrame(animate);
     const elapsedTime = clock.getElapsedTime();
@@ -201,10 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- PROJECT LIST TEXT ANIMATION ---
-  // document.querySelectorAll(".project").forEach((item) => {
-  //   item.addEventListener("mouseover", () => mouseOverAnimation(item));
-  //   item.addEventListener("mouseout", () => mouseOutAnimation(item));
-  // });
 
   const mouseOverAnimation = (elem) => {
     gsap.to(elem.querySelectorAll("h1:nth-child(1)"), {
@@ -347,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Logika matematika murni 1:1 dari nav-menu lo, bro!
                 if (i < wavePosition - 3.5) {
                   span.innerText = originalChar;
-                  span.style.color = "var(--secondary)"; // Mengunci warna hitam di atas bg putih
+                  span.style.color = "var(--primary)"; // Mengunci warna hitam di atas bg putih
                 } else if (i < wavePosition) {
                   const randomChar =
                     randomChars[Math.floor(Math.random() * randomChars.length)];
@@ -364,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sides.forEach((h1) => {
               h1.querySelectorAll("span[data-char]").forEach((span) => {
                 span.innerText = span.getAttribute("data-char");
-                span.style.color = "var(--secondary)";
+                span.style.color = "var(--primary)";
               });
             });
           },
@@ -398,13 +446,43 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Bind Event
+      // ==========================================
+      // BIND EVENT (Solusi Fix Flicker & Opacity)
+      // ==========================================
       project.addEventListener("mouseenter", () => {
-        if (window.innerWidth > 576) activateCube();
+        if (window.innerWidth > 576) {
+          activateCube();
+
+          // Ambil semua H1 dari project LAIN, lalu turunkan opacity-nya
+          projectsA.forEach((otherProject) => {
+            if (otherProject !== project) {
+              const otherSides = otherProject.querySelectorAll("h1");
+              gsap.to(otherSides, {
+                opacity: 0.4,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            }
+          });
+        }
       });
 
       project.addEventListener("mouseleave", () => {
-        if (window.innerWidth > 576) deactivateCube();
+        if (window.innerWidth > 576) {
+          deactivateCube();
+
+          // Kembalikan semua H1 di SEMUA project ke opacity penuh
+          projectsA.forEach((p) => {
+            const allSides = p.querySelectorAll("h1");
+            gsap.to(allSides, {
+              opacity: 1,
+              duration: 0.3,
+              ease: "power2.out",
+              overwrite: "auto",
+            });
+          });
+        }
       });
 
       project.addEventListener("click", (e) => {
@@ -425,6 +503,14 @@ document.addEventListener("DOMContentLoaded", () => {
                   (s) => (s.style.color = "var(--primary)"),
                 );
               }
+
+              // Handler opacity untuk device mobile / touch
+              const sides = p.querySelectorAll("h1");
+              gsap.to(sides, {
+                opacity: p === project ? 1 : 0.4,
+                duration: 0.3,
+                overwrite: "auto",
+              });
             });
             activateCube();
           }
@@ -580,10 +666,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentCubeRotation = 0;
   let lastIndex = 0;
 
-  // Bungkus link .view ke dalam wrapper jika belum ada (atau buat manual di HTML)
-  // Di sini gue asumsikan lo sudah buat <div class="view-wrapper"> di dalam .view-projects
   projects.forEach((li, index) => {
-    // Kita pakai satu listener untuk semua event mobile/desktop
+    // KITA SATUKAN DI SINI BIAR TIDAK SALING BLOKIR
     li.addEventListener("click", (e) => {
       if (window.innerWidth <= 1200) {
         // MATIKAN NAVIGASI TOTAL
@@ -596,12 +680,64 @@ document.addEventListener("DOMContentLoaded", () => {
         playGlitchSound();
 
         // 3. Logic Gulir Kubus (RotationX)
-        // Index 0 -> 0deg, Index 1 -> 90deg, Index 2 -> 180deg, Index 3 -> 270deg
         gsap.to(".view-wrapper", {
           rotationX: index * 90,
           duration: 0.5,
           ease: "power4.out",
         });
+      }
+
+      // 4. LOGIKA OPACITY & 3D CUBE UNTUK MOBILE (DIPINDAH KE SINI)
+      if (window.innerWidth <= 576) {
+        // Anggap 'li' adalah 'project' yang sedang di-tap
+        if (!li.isHovered) {
+          // Loop ke semua project untuk mengatur opacity h1 & reset state project lain
+          projectsA.forEach((p) => {
+            const targetSides = p.querySelectorAll("h1");
+            const otherCube = p.querySelector(".cube");
+
+            if (p !== li) {
+              p.isHovered = false;
+
+              if (p.scrambleTween) p.scrambleTween.kill();
+
+              gsap.to(otherCube, {
+                z: 0,
+                duration: 0.5,
+                ease: "power3.out",
+                overwrite: "auto",
+              });
+
+              p.querySelectorAll("h1 span[data-char]").forEach((s) => {
+                s.style.color = "var(--primary)";
+              });
+
+              // Redupkan h1 project lain
+              gsap.to(targetSides, {
+                opacity: 0.4,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            } else {
+              // Terangkan h1 project yang sedang di-tap aktif
+              gsap.to(targetSides, {
+                opacity: 1,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            }
+          });
+
+          // Panggil fungsi activateCube bawaan project ini (bisa diakses jika fungsinya global atau di dalam scope yang sama)
+          // Jika activateCube() tidak terbaca di scope ini, pindahkan triggers pemicunya ke sini.
+          if (typeof activateCube === "function") {
+            activateCube();
+          } else if (li.activateCube) {
+            li.activateCube(); // Jika di-bind ke elemennya
+          }
+        }
       }
     });
 
@@ -614,17 +750,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-
-  // Listener leavetimer (TV kembali ke default)
-  if (projectsEl) {
-    projectsEl.addEventListener("mouseleave", () => {
-      // Di mobile kita tidak ingin reset ke default saat jari lepas,
-      // tapi di desktop iya.
-      if (window.innerWidth > 1200) {
-        setDisplayImage(defaultDisplayImg);
-      }
-    });
-  }
 
   // --- LOGIC KAMERA RESPONSIVE (768px) ---
   function adjustCamera() {
@@ -699,7 +824,8 @@ function initEnterBtnScramble() {
             span.innerText = originalChar;
             span.style.color = "var(--primary)"; // Selesai ngacak, matang jadi warna terang
           } else if (i < wavePosition) {
-            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            const randomChar =
+              randomChars[Math.floor(Math.random() * randomChars.length)];
             span.innerText = randomChar;
             span.style.color = "var(--blue)"; // Menyala biru pas fase ngacak
           } else {
@@ -714,7 +840,7 @@ function initEnterBtnScramble() {
           span.innerText = span.getAttribute("data-char");
           span.style.color = "var(--primary)";
         });
-      }
+      },
     });
   });
 
@@ -729,7 +855,7 @@ function initEnterBtnScramble() {
         duration: 0.3,
         delay: i * 0.02, // Efek domino rontok dari depan ke belakang khas lo!
         ease: "power2.out",
-        overwrite: "auto"
+        overwrite: "auto",
       });
     });
   });
