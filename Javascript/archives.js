@@ -128,7 +128,7 @@ const CAM_CONFIG = {
 
 // ====== PARAMETER GALLERY ======
 const getParams = () => {
-  const isMobile = window.innerWidth <= 756;
+  const isMobile = window.innerWidth <= 768;
   return {
     curvature: 5,
     // Nilai ini sekarang jadi dinamis
@@ -1169,18 +1169,34 @@ const slideHeights = Array.from(
 const slideOffsets = [];
 let stackPosition = 0;
 
+// --- TAMBAHKAN LOGIKA INI ---
+// Cek jika layar adalah mobile (lebar kurang dari 768px)
+// const isMobile = window.innerWidth < 768;
+
+// Di mobile kita perbesar ukurannya (misal dikali 2.0 atau 2.5 agar pas di layar), di desktop biarkan 1.0
+const sizeMultiplier = isMobile ? 2 : 1.0; 
+
+// Gap/jarak antar video di mobile disesuaikan agar proporsional dan tidak bertumpuk
+const baseGap = config.gap * (isMobile ? 1.5 : 1.0); 
+// ----------------------------
+
 for (let i = 0; i < totalSlides; i++) {
+  // Kalikan ukuran tinggi dasar dengan sizeMultiplier
+  const currentHeight = slideHeights[i] * sizeMultiplier;
+  
   if (i === 0) {
     slideOffsets.push(0);
-    stackPosition = slideHeights[0] / 2;
+    stackPosition = currentHeight / 2;
   } else {
-    stackPosition += config.gap + slideHeights[i] / 2;
+    stackPosition += baseGap + currentHeight / 2;
     slideOffsets.push(stackPosition);
-    stackPosition += slideHeights[i] / 2;
+    stackPosition += currentHeight / 2;
   }
 }
 
-const loopLength = stackPosition + config.gap + slideHeights[0] / 2;
+// Update loopLength menggunakan variabel baru
+const currentFirstHeight = slideHeights[0] * sizeMultiplier;
+const loopLength = stackPosition + baseGap + currentFirstHeight / 2;
 const halfLoop = loopLength / 2;
 
 const meshes = [];
@@ -1205,7 +1221,7 @@ const createVideoTexture = (src) => {
 };
 
 for (let i = 0; i < totalSlides; i++) {
-  const height = slideHeights[i];
+  const height = slideHeights[i] * sizeMultiplier;
   const width = height * config.aspectRatio;
 
   // 1. Pakai ShaderMaterial atau MeshBasicMaterial
