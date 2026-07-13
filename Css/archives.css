@@ -453,8 +453,8 @@ nav .nav-menu {
     display: none;
   }
   .slide-info{
-    padding: 0 1rem;
-    font-size: 12px;
+    padding: 0 .5rem;
+    font-size: 11px;
   }
 }
 
