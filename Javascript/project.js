@@ -31,16 +31,26 @@ const rightContent = rightPanel.querySelector(".content");
 
 // bikin 2 instance Lenis, masing-masing untuk panel kiri dan kanan
 // 1. Konfigurasi Scroll Cinematic
+// Cek kondisi mobile saat inisialisasi awal
+const isMobileDevice = window.innerWidth < 768;
+
+// 1. Konfigurasi Scroll Cinematic (Fleksibel Desktop & Mobile)
 const scrollConfig = {
   duration: 2.0, // Durasi scroll lebih lama (cinematic)
   lerp: 0.05, // Nilai rendah = efek 'berat' dan smooth (inertia)
   wheelMultiplier: 0.5, // Menghaluskan tarikan wheel
-  touchMultiplier: 2, // Agar di layar sentuh tetep responsif
+  
+  // Jauh lebih lambat di mobile (default desktop = 2, mobile = 0.8)
+  touchMultiplier: isMobileDevice ? 0.8 : 2, 
+  
   smoothWheel: true,
   smoothTouch: true,
   syncTouch: true, // Menghubungkan scroll Lenis dengan jari
-  syncTouchLerp: 0.08, // Memberikan efek "smooth" setelah jari lepas dari layar
-  touchInertiaMultiplier: 40,
+  
+  // Memberikan efek lebih "smooth" dan berat saat jari lepas di mobile
+  syncTouchLerp: isMobileDevice ? 0.04 : 0.08, 
+  
+  touchInertiaMultiplier: isMobileDevice ? 20 : 40, // Mengurangi gaya dorong sisa scroll di mobile
 };
 
 // 2. Inisialisasi Lenis Left Panel
@@ -140,11 +150,25 @@ window.addEventListener("resize", () => {
     // Hitung ulang tinggi konten asli untuk logika idle
     recalcHeights(false);
 
+    // --- TAMBAHKAN LOGIKA UPDATE MULTIPLIER DI SINI ---
+    const isMobileNow = window.innerWidth < 768;
+    
+    // Update konfigurasi left panel secara dinamis
+    lenisLeft.options.touchMultiplier = isMobileNow ? 0.8 : 2;
+    lenisLeft.options.syncTouchLerp = isMobileNow ? 0.04 : 0.08;
+    lenisLeft.options.touchInertiaMultiplier = isMobileNow ? 20 : 40;
+
+    // Update konfigurasi right panel secara dinamis
+    lenisRight.options.touchMultiplier = isMobileNow ? 0.8 : 2;
+    lenisRight.options.syncTouchLerp = isMobileNow ? 0.04 : 0.08;
+    lenisRight.options.touchInertiaMultiplier = isMobileNow ? 20 : 40;
+    // --------------------------------------------------
+
     // Opsional: Matikan auto-scroll di mobile kalau dirasa mengganggu
     if (window.innerWidth < 768) {
       // isIdle = false; // Jika mau dimatikan total di mobile
     }
-  }, 250); // Jeda 250ms supaya browser kelar render perubahan ukuran gambar/font
+  }, 250); 
 });
 
 // === IDLE LOGIC (DIPERBAIKI) ===
