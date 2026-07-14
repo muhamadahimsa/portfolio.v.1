@@ -751,6 +751,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // === LOGIKA RESET SAAT KLIK DI LUAR PROJECTS (CLICK OUTSIDE) ===
+  document.addEventListener("click", (e) => {
+    // Hanya jalankan logika reset ini di versi mobile (di bawah 576px)
+    if (window.innerWidth <= 576) {
+      // Cek apakah area yang diklik berada di dalam element .project
+      const isClickedOnProject = e.target.closest(".projects .project");
+
+      // Jika user mengklik di luar seluruh element project, kita reset semuanya!
+      if (!isClickedOnProject) {
+        projects.forEach((p) => {
+          p.isHovered = false;
+
+          // Hentikan paksa scramble tween jika ada yang masih jalan
+          if (p.scrambleTween) p.scrambleTween.kill();
+
+          const targetSides = p.querySelectorAll("h1");
+          const otherCube = p.querySelector(".cube");
+
+          // 1. Kembalikan posisi 3D Cube ke semula (Z: 0)
+          if (otherCube) {
+            gsap.to(otherCube, {
+              z: 0,
+              duration: 0.5,
+              ease: "power3.out",
+              overwrite: "auto",
+            });
+          }
+
+          // 2. Kembalikan warna huruf ke warna utama
+          p.querySelectorAll("h1 span[data-char]").forEach((s) => {
+            s.style.color = "var(--primary)";
+          });
+
+          // 3. Kembalikan opacity h1 semua project ke terang benderang (1.0)
+          gsap.to(targetSides, {
+            opacity: 1, // <--- Kunci utama untuk mengembalikan opacity yang memudar
+            duration: 0.3,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        });
+      }
+    }
+  });
+
   // --- LOGIC KAMERA RESPONSIVE (768px) ---
   function adjustCamera() {
     if (window.innerWidth <= 768) {
