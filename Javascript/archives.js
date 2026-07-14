@@ -1470,11 +1470,77 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initArchivesBtnScramble() {
-  const asciiBtn = document.querySelector(".archives-btn");
-  if (!asciiBtn) return;
+  const archivesBtn = document.querySelector(".archives-btn");
+  if (!archivesBtn) return;
 
   const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
-  const btnTexts = asciiBtn.querySelectorAll(".btn-text");
+  const btnTexts = archivesBtn.querySelectorAll(".btn-text");
+
+  // --- HELPER FUNCTION 1: UPDATE WARNA SEMUA TOMBOL ---
+  // Memaksa seluruh huruf kembali ke warna aslinya yang benar sesuai status `.active-text` terbaru
+  function resetAllButtonColors() {
+    btnTexts.forEach((btn) => {
+      const letterSpans = btn.querySelectorAll("span[data-char]");
+      const isActive = btn.classList.contains("active-text");
+
+      letterSpans.forEach((span) => {
+        // Hentikan paksa transisi warna individu yang masih berjalan
+        gsap.killTweensOf(span); 
+        
+        span.innerText = span.getAttribute("data-char");
+        span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
+      });
+    });
+  }
+
+  // --- HELPER FUNCTION 2: FUNGSI UTAMA UNTUK MENGACAK TEKS ---
+  function runScrambleAnimation(btn) {
+    if (btn.scrambleTween) btn.scrambleTween.kill();
+
+    const letterSpans = btn.querySelectorAll("span[data-char]");
+    const textLength = letterSpans.length;
+    let progressObj = { value: 0 };
+
+    btn.scrambleTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.4,
+      ease: "power1.out",
+      onUpdate: () => {
+        const wavePosition = progressObj.value * (textLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            if (btn.classList.contains("active-text")) {
+              span.style.color = "var(--primary)";
+            } else {
+              span.style.color = "var(--secondary)";
+            }
+          } else if (i < wavePosition) {
+            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)";
+          } else {
+            if (btn.classList.contains("active-text")) {
+              span.style.color = "var(--primary)";
+            } else {
+              span.style.color = "var(--secondary)";
+            }
+          }
+        });
+      },
+      onComplete: () => {
+        letterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = btn.classList.contains("active-text")
+            ? "var(--primary)"
+            : "var(--secondary)";
+        });
+      },
+    });
+  }
 
   // --- 1. PROSES SPLITTING TEXT (Img & Ascii) ---
   btnTexts.forEach((btn) => {
@@ -1491,7 +1557,6 @@ function initArchivesBtnScramble() {
     }
     btn.innerHTML = splitHTML;
 
-    // Inisialisasi warna awal berdasarkan class state `.active-text` saat page load
     const letterSpans = btn.querySelectorAll("span[data-char]");
     const isActive = btn.classList.contains("active-text");
 
@@ -1499,60 +1564,11 @@ function initArchivesBtnScramble() {
       span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
     });
 
-    // Simpan object tween di memory elemen masing-masing agar tidak saling tabrakan
     btn.scrambleTween = null;
 
     // --- 2. LOGIKA HOVER PER BUTTON TEXT (`mouseenter`) ---
     btn.addEventListener("mouseenter", () => {
-      if (btn.scrambleTween) btn.scrambleTween.kill();
-
-      const letterSpans = btn.querySelectorAll("span[data-char]");
-      const textLength = letterSpans.length;
-      let progressObj = { value: 0 };
-
-      btn.scrambleTween = gsap.to(progressObj, {
-        value: 1,
-        duration: 0.4, // Durasi sedikit lebih cepat karena katanya pendek (Img / Ascii)
-        ease: "power1.out",
-        onUpdate: () => {
-          const wavePosition = progressObj.value * (textLength + 3);
-
-          letterSpans.forEach((span, i) => {
-            const originalChar = span.getAttribute("data-char");
-
-            if (i < wavePosition - 2.5) {
-              span.innerText = originalChar;
-              // Pas matang, cek real-time apakah tombol ini yang lagi memegang class active
-              if (btn.classList.contains("active-text")) {
-                span.style.color = "var(--primary)"; // Tetap putih di atas bg hitam
-              } else {
-                span.style.color = "var(--secondary)"; // Tetap hitam di atas bg transparan/putih
-              }
-            } else if (i < wavePosition) {
-              const randomChar =
-                randomChars[Math.floor(Math.random() * randomChars.length)];
-              span.innerText = randomChar;
-              span.style.color = "var(--blue)"; // Efek kilatan biru cyberpunk pas ngacak!
-            } else {
-              // Menjaga warna sebelum terjangkau ombak scramble
-              if (btn.classList.contains("active-text")) {
-                span.style.color = "var(--primary)";
-              } else {
-                span.style.color = "var(--secondary)";
-              }
-            }
-          });
-        },
-        onComplete: () => {
-          // Kunci aman kondisi akhir text asli
-          letterSpans.forEach((span) => {
-            span.innerText = span.getAttribute("data-char");
-            span.style.color = btn.classList.contains("active-text")
-              ? "var(--primary)"
-              : "var(--secondary)";
-          });
-        },
-      });
+      runScrambleAnimation(btn);
     });
 
     // --- 3. LOGIKA KURSOR KELUAR PER BUTTON TEXT (`mouseleave`) ---
@@ -1564,7 +1580,6 @@ function initArchivesBtnScramble() {
       letterSpans.forEach((span, i) => {
         span.innerText = span.getAttribute("data-char");
 
-        // Kembalikan warna asli secara domino berdasarkan status aktifnya
         gsap.to(span, {
           color: btn.classList.contains("active-text")
             ? "var(--primary)"
@@ -1575,6 +1590,19 @@ function initArchivesBtnScramble() {
           overwrite: "auto",
         });
       });
+    });
+
+    // --- 4. LOGIKA KLIK DI VERSI MOBILE (< 768px) ---
+    btn.addEventListener("click", () => {
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          // 1. Bersihkan dan selaraskan warna seluruh tombol
+          resetAllButtonColors();
+          
+          // 2. Mainkan efek scramble hanya di tombol yang aktif diklik
+          runScrambleAnimation(btn);
+        }, 50);
+      }
     });
   });
 }

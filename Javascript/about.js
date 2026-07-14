@@ -1164,6 +1164,73 @@ function initAsciiBtnScramble() {
   const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
   const btnTexts = asciiBtn.querySelectorAll(".btn-text");
 
+  // --- HELPER FUNCTION 1: UPDATE WARNA SEMUA TOMBOL ---
+  // Fungsi ini bertugas memaksa semua huruf kembali ke warna yang benar 
+  // sesuai status `.active-text` terbarunya (sangat krusial untuk mobile)
+  function resetAllButtonColors() {
+    btnTexts.forEach((btn) => {
+      const letterSpans = btn.querySelectorAll("span[data-char]");
+      const isActive = btn.classList.contains("active-text");
+
+      letterSpans.forEach((span) => {
+        // Hentikan tween warna individu yang sedang berjalan agar tidak tabrakan
+        gsap.killTweensOf(span); 
+        
+        span.innerText = span.getAttribute("data-char");
+        span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
+      });
+    });
+  }
+
+  // --- HELPER FUNCTION 2: FUNGSI UTAMA UNTUK MENGACAK TEKS ---
+  function runScrambleAnimation(btn) {
+    if (btn.scrambleTween) btn.scrambleTween.kill();
+
+    const letterSpans = btn.querySelectorAll("span[data-char]");
+    const textLength = letterSpans.length;
+    let progressObj = { value: 0 };
+
+    btn.scrambleTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.4,
+      ease: "power1.out",
+      onUpdate: () => {
+        const wavePosition = progressObj.value * (textLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const originalChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            span.innerText = originalChar;
+            if (btn.classList.contains("active-text")) {
+              span.style.color = "var(--primary)";
+            } else {
+              span.style.color = "var(--secondary)";
+            }
+          } else if (i < wavePosition) {
+            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)";
+          } else {
+            if (btn.classList.contains("active-text")) {
+              span.style.color = "var(--primary)";
+            } else {
+              span.style.color = "var(--secondary)";
+            }
+          }
+        });
+      },
+      onComplete: () => {
+        letterSpans.forEach((span) => {
+          span.innerText = span.getAttribute("data-char");
+          span.style.color = btn.classList.contains("active-text")
+            ? "var(--primary)"
+            : "var(--secondary)";
+        });
+      },
+    });
+  }
+
   // --- 1. PROSES SPLITTING TEXT (Img & Ascii) ---
   btnTexts.forEach((btn) => {
     const originalText = btn.innerText;
@@ -1179,7 +1246,6 @@ function initAsciiBtnScramble() {
     }
     btn.innerHTML = splitHTML;
 
-    // Inisialisasi warna awal berdasarkan class state `.active-text` saat page load
     const letterSpans = btn.querySelectorAll("span[data-char]");
     const isActive = btn.classList.contains("active-text");
 
@@ -1187,60 +1253,11 @@ function initAsciiBtnScramble() {
       span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
     });
 
-    // Simpan object tween di memory elemen masing-masing agar tidak saling tabrakan
     btn.scrambleTween = null;
 
     // --- 2. LOGIKA HOVER PER BUTTON TEXT (`mouseenter`) ---
     btn.addEventListener("mouseenter", () => {
-      if (btn.scrambleTween) btn.scrambleTween.kill();
-
-      const letterSpans = btn.querySelectorAll("span[data-char]");
-      const textLength = letterSpans.length;
-      let progressObj = { value: 0 };
-
-      btn.scrambleTween = gsap.to(progressObj, {
-        value: 1,
-        duration: 0.4, // Durasi sedikit lebih cepat karena katanya pendek (Img / Ascii)
-        ease: "power1.out",
-        onUpdate: () => {
-          const wavePosition = progressObj.value * (textLength + 3);
-
-          letterSpans.forEach((span, i) => {
-            const originalChar = span.getAttribute("data-char");
-
-            if (i < wavePosition - 2.5) {
-              span.innerText = originalChar;
-              // Pas matang, cek real-time apakah tombol ini yang lagi memegang class active
-              if (btn.classList.contains("active-text")) {
-                span.style.color = "var(--primary)"; // Tetap putih di atas bg hitam
-              } else {
-                span.style.color = "var(--secondary)"; // Tetap hitam di atas bg transparan/putih
-              }
-            } else if (i < wavePosition) {
-              const randomChar =
-                randomChars[Math.floor(Math.random() * randomChars.length)];
-              span.innerText = randomChar;
-              span.style.color = "var(--blue)"; // Efek kilatan biru cyberpunk pas ngacak!
-            } else {
-              // Menjaga warna sebelum terjangkau ombak scramble
-              if (btn.classList.contains("active-text")) {
-                span.style.color = "var(--primary)";
-              } else {
-                span.style.color = "var(--secondary)";
-              }
-            }
-          });
-        },
-        onComplete: () => {
-          // Kunci aman kondisi akhir text asli
-          letterSpans.forEach((span) => {
-            span.innerText = span.getAttribute("data-char");
-            span.style.color = btn.classList.contains("active-text")
-              ? "var(--primary)"
-              : "var(--secondary)";
-          });
-        },
-      });
+      runScrambleAnimation(btn);
     });
 
     // --- 3. LOGIKA KURSOR KELUAR PER BUTTON TEXT (`mouseleave`) ---
@@ -1252,7 +1269,6 @@ function initAsciiBtnScramble() {
       letterSpans.forEach((span, i) => {
         span.innerText = span.getAttribute("data-char");
 
-        // Kembalikan warna asli secara domino berdasarkan status aktifnya
         gsap.to(span, {
           color: btn.classList.contains("active-text")
             ? "var(--primary)"
@@ -1263,6 +1279,21 @@ function initAsciiBtnScramble() {
           overwrite: "auto",
         });
       });
+    });
+
+    // --- 4. LOGIKA KLIK DI VERSI MOBILE (< 768px) ---
+    btn.addEventListener("click", () => {
+      if (window.innerWidth < 768) {
+        // Berikan delay sangat tipis (10-50ms) menggunakan setTimeout 
+        // agar JS memberikan waktu bagi script toggle-class kamu untuk memindahkan class '.active-text' terlebih dahulu
+        setTimeout(() => {
+          // 1. Reset dan samakan warna semua tombol sesuai state active/inactive terbarunya
+          resetAllButtonColors();
+          
+          // 2. Jalankan efek scramble khusus untuk tombol yang baru saja diklik
+          runScrambleAnimation(btn);
+        }, 50);
+      }
     });
   });
 }
