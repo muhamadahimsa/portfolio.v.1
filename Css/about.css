@@ -386,8 +386,8 @@ h1 {
 @media (max-width: 576px) {
   .hero-top {
     width: 100%;
-    padding: 5rem;
-    text-align: center;
+    padding: 5rem 0;
+    align-items: center;
   }
   .hero-bottom {
     width: 100%;
@@ -430,7 +430,7 @@ h1 {
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   .info-btn .--button .btn-wrapper {

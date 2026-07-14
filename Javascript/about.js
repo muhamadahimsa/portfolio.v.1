@@ -1278,7 +1278,7 @@ function initHeroTextRotator() {
 
   const wordsList = [
     "Creative Developer",
-    "Lazy Designer",
+    "Visual Designer",
     "a Mother's Boy",
     "a Human like You",
   ];
