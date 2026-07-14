@@ -400,7 +400,7 @@ h1 {
 
   .info-wrapper {
     width: 100vw;
-    padding-top: 4rem;
+    padding-bottom: 6rem;
     height: 70rem;
   }
   .info-background {
@@ -419,7 +419,7 @@ h1 {
     font-size: 12px;
   }
   .info-close {
-    bottom: 4rem;
+    bottom: 6rem;
   }
 
   .crosshair {
