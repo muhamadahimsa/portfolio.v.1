@@ -175,14 +175,16 @@ footer {
   z-index: 1;
   pointer-events: none;
 }
-.footer-wrapper p {
+.footer-wrapper p,
+.footer-wrapper h4 {
   font-size: 1.5rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-transform: uppercase;
   line-height: 1;
   letter-spacing: -0.05rem;
 }
-.footer-wrapper:nth-child(2) p:nth-child(1) {
+.footer-wrapper:nth-child(2) .ofh:nth-child(2) p{
   opacity: 0.5;
 }
 p.time {
@@ -231,7 +233,8 @@ p.time {
   footer{
     padding: 1rem;
   }
-  .footer-wrapper p {
+  .footer-wrapper p,
+  .footer-wrapper h4 {
     font-size: 1rem;
     text-transform: uppercase;
     line-height: 1;

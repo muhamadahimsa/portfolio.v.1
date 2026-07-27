@@ -26,23 +26,104 @@ document.addEventListener("DOMContentLoaded", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
+  renderer.toneMappingExposure = 1.0;
   hero.appendChild(renderer.domElement);
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-  dirLight.position.set(15, 10, -5);
-  scene.add(dirLight);
+  // --- 2. SETUP RENDER TARGET & POST-PROCESSING SCENE ---
+  const renderTarget = new THREE.WebGLRenderTarget(
+    window.innerWidth * renderer.getPixelRatio(),
+    window.innerHeight * renderer.getPixelRatio(),
+  );
+
+  const postScene = new THREE.Scene();
+  const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  const postVertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position, 1.0);
+    }
+  `;
+
+  const postFragmentShader = `
+    varying vec2 vUv;
+    uniform sampler2D u_texture;    
+    uniform vec2 u_mouse;
+    uniform vec2 u_prevMouse;
+    uniform float u_aberrationIntensity;
+
+    void main() {
+        vec2 gridUV = floor(vUv * vec2(60.0, 60.0)) / vec2(60.0, 60.0);
+        vec2 centerOfPixel = gridUV + vec2(1.0/60.0, 1.0/60.0);
+        
+        vec2 mouseDirection = u_mouse - u_prevMouse;
+        vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+        float pixelDistanceToMouse = length(pixelToMouseDirection);
+        float strength = smoothstep(0.3, 0.0, pixelDistanceToMouse);
+
+        vec2 uvOffset = strength * -mouseDirection * 0.2;
+        vec2 uv = vUv - uvOffset;
+
+        vec4 colorR = texture2D(u_texture, uv + vec2(strength * u_aberrationIntensity * 0.01, 0.0));
+        vec4 colorG = texture2D(u_texture, uv);
+        vec4 colorB = texture2D(u_texture, uv - vec2(strength * u_aberrationIntensity * 0.01, 0.0));
+
+        gl_FragColor = vec4(colorR.r, colorG.g, colorB.b, 1.0);
+    }
+  `;
+
+  const postUniforms = {
+    u_texture: { value: renderTarget.texture },
+    u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+    u_prevMouse: { value: new THREE.Vector2(0.5, 0.5) },
+    u_aberrationIntensity: { value: 0.0 },
+  };
+
+  const postMaterial = new THREE.ShaderMaterial({
+    vertexShader: postVertexShader,
+    fragmentShader: postFragmentShader,
+    uniforms: postUniforms,
+  });
+
+  const postPlane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
+  postScene.add(postPlane);
+
+  // --- 3. MOUSE & POST-PROCESSING VARIABLES ---
+  let mousePos = { x: 0.5, y: 0.5 };
+  let targetMousePos = { x: 0.5, y: 0.5 };
+  let prevMousePos = { x: 0.5, y: 0.5 };
+  let aberration = 0.0;
+
+  hero.addEventListener("mousemove", (e) => {
+    const rect = hero.getBoundingClientRect();
+    prevMousePos = { ...targetMousePos };
+
+    targetMousePos.x = (e.clientX - rect.left) / rect.width;
+    targetMousePos.y = (e.clientY - rect.top) / rect.height;
+
+    aberration = 1.0;
+  });
+
+  // --- LIGHTING SETUP (FOR THREE.JS r170) ---
+  const ceilingDirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  ceilingDirLight.position.set(0, 4, 2);
+  scene.add(ceilingDirLight);
+
+  const roomCeilingLight = new THREE.PointLight(0xffffff, 40.0, 20);
+  roomCeilingLight.position.set(0, 1.8, -0.5);
+  scene.add(roomCeilingLight);
+
+  const roomAmbient = new THREE.AmbientLight(0xffffff, 0.8);
+  scene.add(roomAmbient);
 
   const monitorGroup = new THREE.Group();
   scene.add(monitorGroup);
 
-  // --- 2. LOADERS WITH MANAGER ---
+  // --- 4. LOADERS & MODEL ---
   const allScreens = [];
-  const textureLoader = new THREE.TextureLoader(loadingManager); // Added manager
+  const textureLoader = new THREE.TextureLoader(loadingManager);
   const textureCache = {};
-
   const defaultDisplayImg = "./Asset/Images/home.webp";
 
   function loadTexture(src) {
@@ -71,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fragmentShader,
   });
 
-  const loader = new GLTFLoader(loadingManager); // Added manager
+  const loader = new GLTFLoader(loadingManager);
   loader.setMeshoptDecoder(MeshoptDecoder);
 
   loader.load("./Asset/3D/monitors.glb", (gltf) => {
@@ -95,18 +176,15 @@ document.addEventListener("DOMContentLoaded", () => {
     monitorGroup.add(model);
   });
 
-  // Mouse & Animation Logic
+  // --- 5. MOUSE 3D TILT & GYROSCOPE LOGIC ---
   let mouse = { x: 0, y: 0 };
   let gyro = { x: 0, y: 0 };
   const lerpedMouse = { x: 0, y: 0 };
   const clock = new THREE.Clock();
 
-  // --- LOGIKA GYROSCOPE UNTUK MOBILE ---
   function initGyroscope() {
     if (window.DeviceOrientationEvent) {
-      // Cek khusus untuk perangkat iOS (iPhone/iPad) yang butuh requestPermission
       if (typeof DeviceOrientationEvent.requestPermission === "function") {
-        // Karena butuh interaksi user, kita tembak izinnya saat pertama kali user nge-tap layar mobile
         window.addEventListener(
           "click",
           function requestGyro() {
@@ -121,57 +199,60 @@ document.addEventListener("DOMContentLoaded", () => {
               })
               .catch(console.error);
 
-            // Hapus listener ini setelah sekali klik agar tidak request berulang-ulang
             window.removeEventListener("click", requestGyro);
           },
           { once: true },
         );
       } else {
-        // Untuk Android dan browser non-iOS bisa langsung pasang listener
         window.addEventListener("deviceorientation", handleOrientation);
       }
     }
   }
 
   function handleOrientation(event) {
-    // gamma: kemiringan kiri-kanan (-90 sampai 90)
-    // beta: kemiringan depan-belakang (-180 sampai 180)
     const x = event.gamma;
     const y = event.beta;
-
-    // Kita batasi (clamp) dan normalisasi nilainya menjadi range -1 sampai 1
-    // Angka pembagi (misal 30) menentukan seberapa sensitif ayunan HP-nya
     const maxTilt = 30;
 
     gyro.x = Math.max(-1, Math.min(1, x / maxTilt));
     gyro.y = Math.max(-1, Math.min(1, (y - 45) / maxTilt));
-    // Catatan: (y - 45) berasumsi user memegang HP agak miring 45 derajat saat melihat layar (posisi santai), bukan flat di meja.
   }
 
-  // Jalankan fungsi inisialisasi gyro-nya
   if (window.innerWidth <= 576) {
     initGyroscope();
   }
 
+  // --- 6. SINGLE INTEGRATED ANIMATE LOOP ---
   function animate() {
     requestAnimationFrame(animate);
     const elapsedTime = clock.getElapsedTime();
 
-    // Gabungkan input Mouse/Touch dengan Gyro
+    // A. Update 3D Tilt Monitors
     const targetX = mouse.x + gyro.x;
     const targetY = mouse.y + gyro.y;
 
-    // Gunakan nilai gabungan untuk interpolasi
     lerpedMouse.x = gsap.utils.interpolate(lerpedMouse.x, targetX, 0.05);
     lerpedMouse.y = gsap.utils.interpolate(lerpedMouse.y, targetY, 0.05);
 
-    // Monitor group akan merespon kemiringan HP
     monitorGroup.rotation.x = lerpedMouse.y * 0.1;
     monitorGroup.rotation.y = lerpedMouse.x * 0.2;
 
-    // Jika monitorGroup punya monitor kecil di dalamnya,
-    // rotasi ini akan memberikan efek kedalaman yang keren
+    // B. Update Post-Processing Shader Pixel
+    mousePos.x += (targetMousePos.x - mousePos.x) * 0.02;
+    mousePos.y += (targetMousePos.y - mousePos.y) * 0.02;
+
+    postUniforms.u_mouse.value.set(mousePos.x, 1.0 - mousePos.y);
+    postUniforms.u_prevMouse.value.set(prevMousePos.x, 1.0 - prevMousePos.y);
+
+    aberration = Math.max(0.0, aberration - 0.05);
+    postUniforms.u_aberrationIntensity.value = aberration;
+
+    // C. DOUBLE-PASS RENDERING
+    renderer.setRenderTarget(renderTarget);
     renderer.render(scene, camera);
+
+    renderer.setRenderTarget(null);
+    renderer.render(postScene, postCamera);
   }
   animate();
 
@@ -214,16 +295,11 @@ document.addEventListener("DOMContentLoaded", () => {
     mouse.y = e.clientY / window.innerHeight - 0.5;
   });
 
-  // --- LOGIC GYRO UNTUK INDEX (RESPONSIVE) ---
   if (window.innerWidth <= 1200) {
     window.addEventListener(
       "deviceorientation",
       (e) => {
         if (e.beta === null || e.gamma === null) return;
-
-        // Normalisasi nilai agar seimbang dengan range mouse (-0.5 sampai 0.5)
-        // Gamma: Miring kiri-kanan
-        // Beta: Miring depan-belakang (dikurangi 45 derajat posisi normal)
         gyro.x = (e.gamma / 90) * 0.5;
         gyro.y = ((e.beta - 45) / 90) * 0.5;
       },
@@ -234,15 +310,14 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
 
-  document.querySelectorAll(".projects .project").forEach((li) => {
-    li.addEventListener("mouseenter", () => {
-      const img = li.getAttribute("data-img");
-      if (img) setDisplayImage(img);
-      playGlitchSound();
-    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderTarget.setSize(
+      window.innerWidth * renderer.getPixelRatio(),
+      window.innerHeight * renderer.getPixelRatio(),
+    );
+
+    adjustCamera();
   });
 
   const projectsEl = document.querySelector(".projects");
@@ -252,55 +327,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- PROJECT LIST TEXT ANIMATION ---
-
-  const mouseOverAnimation = (elem) => {
-    gsap.to(elem.querySelectorAll("h1:nth-child(1)"), {
-      top: "-100%",
-      duration: 0.3,
-      ease: "power2.out",
-      overwrite: true,
-    });
-    gsap.to(elem.querySelectorAll("h1:nth-child(2)"), {
-      top: "0%",
-      duration: 0.3,
-      ease: "power2.out",
-      overwrite: true,
-    });
-  };
-
-  const mouseOutAnimation = (elem) => {
-    gsap.to(elem.querySelectorAll("h1:nth-child(1)"), {
-      top: "0%",
-      duration: 0.3,
-      ease: "power2.out",
-      overwrite: true,
-    });
-    gsap.to(elem.querySelectorAll("h1:nth-child(2)"), {
-      top: "100%",
-      duration: 0.3,
-      ease: "power2.out",
-      overwrite: true,
-    });
-  };
-
-  const projectsA = document.querySelectorAll(".project");
+  // --- PROJECT LIST TEXT ANIMATION & CUBES ---
+  const projectsA = document.querySelectorAll(".projects .project");
   const projectsContainer = document.querySelector(".projects");
   const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?0123456789";
 
-  mouse = { x: 0, y: 0 };
   let target = { x: 0, y: 0 };
 
   function init3DCubes() {
+    if (!projectsContainer) return;
     gsap.set(projectsContainer, { xPercent: -50, yPercent: -50 });
 
-    projectsA.forEach((project, index) => {
+    projectsA.forEach((project) => {
       const cube = project.querySelector(".cube");
       const sides = project.querySelectorAll("h1");
 
       if (!cube || sides.length < 4) return;
 
-      // --- 1. PROSES SPLITTING TEXT (SAMA PERSIS DENGAN NAV-MENU) ---
       const originalText = sides[0].innerText;
       const textLength = originalText.length;
 
@@ -313,10 +356,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Suntik kode HTML span ke keempat sisi kubus
       sides.forEach((h1) => (h1.innerHTML = splitHTML));
 
-      // Setup ukuran 3D Kubus dasar
       const width = project.getBoundingClientRect().width;
       const halfWidth = width / 2;
 
@@ -335,37 +376,11 @@ document.addEventListener("DOMContentLoaded", () => {
       project.isHovered = false;
       project.currentSide = 0;
       project.scrambleTween = null;
-    });
 
-    // MASTER CLOCK GLOBAL
-    function triggerGlobalRotation() {
-      gsap.to(document.querySelectorAll(".project .cube"), {
-        rotationY: (index, target) => {
-          const parentProject = target.closest(".project");
-          if (parentProject.isHovered) return parentProject.currentSide * -90;
-
-          parentProject.currentSide++;
-          return parentProject.currentSide * -90;
-        },
-        duration: 1,
-        ease: "power3.inOut",
-        stagger: 0.3,
-      });
-      gsap.delayedCall(2.5, triggerGlobalRotation);
-    }
-    gsap.delayedCall(1.5, triggerGlobalRotation);
-
-    // --- 2. LOGIKA INTERAKSI KURSOR DENGAN REPLIKASI RUMUS NAV-MENU DEWA ---
-    projectsA.forEach((project) => {
-      const cube = project.querySelector(".cube");
-      const sides = project.querySelectorAll("h1");
-      const originalText = sides[0].innerText;
-      const textLength = originalText.length;
-
-      function activateCube() {
+      // ATTACH FUNGSI UNTUK MOBILE TRIGGER
+      project.activateCube = function () {
         project.isHovered = true;
 
-        // Maju secara 3D
         gsap.to(cube, {
           z: 1,
           duration: 0.5,
@@ -373,37 +388,33 @@ document.addEventListener("DOMContentLoaded", () => {
           overwrite: "auto",
         });
 
-        // Efek Scramble
         if (project.scrambleTween) project.scrambleTween.kill();
         let progressObj = { value: 0 };
 
         project.scrambleTween = gsap.to(progressObj, {
           value: 1,
-          duration: 0.6, // Durasi disamakan persis dengan nav-menu lo
-          ease: "power1.out", // Easing disamakan persis dengan nav-menu lo
+          duration: 0.6,
+          ease: "power1.out",
           onUpdate: () => {
-            // Rumus wavePosition disamakan persis dengan nav-menu lo
             const wavePosition = progressObj.value * (textLength + 3);
 
-            // KUNCI KESEMBUHAN: Kita pecah perulangan langsung per sisi h1
             sides.forEach((h1) => {
               const letterSpans = h1.querySelectorAll("span[data-char]");
 
               letterSpans.forEach((span, i) => {
                 const originalChar = span.getAttribute("data-char");
 
-                // Logika matematika murni 1:1 dari nav-menu lo, bro!
                 if (i < wavePosition - 3.5) {
                   span.innerText = originalChar;
-                  span.style.color = "var(--primary)"; // Mengunci warna hitam di atas bg putih
+                  span.style.color = "var(--primary)";
                 } else if (i < wavePosition) {
                   const randomChar =
                     randomChars[Math.floor(Math.random() * randomChars.length)];
                   span.innerText = randomChar;
-                  span.style.color = "var(--blue)"; // Flashing biru saat ngacak
+                  span.style.color = "var(--blue)";
                 } else {
                   span.innerText = originalChar;
-                  span.style.color = "var(--primary)"; // Warna awal abu-abu
+                  span.style.color = "var(--primary)";
                 }
               });
             });
@@ -417,9 +428,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
           },
         });
-      }
+      };
 
-      function deactivateCube() {
+      project.deactivateCube = function () {
         project.isHovered = false;
 
         gsap.to(cube, {
@@ -438,22 +449,19 @@ document.addEventListener("DOMContentLoaded", () => {
             gsap.to(span, {
               color: "var(--primary)",
               duration: 0.3,
-              delay: i * 0.02, // Efek riak mundur halus dari nav-menu lo
+              delay: i * 0.02,
               ease: "power2.out",
               overwrite: "auto",
             });
           });
         });
-      }
+      };
 
-      // ==========================================
-      // BIND EVENT (Solusi Fix Flicker & Opacity)
-      // ==========================================
+      // HOVER UNTUK DESKTOP
       project.addEventListener("mouseenter", () => {
         if (window.innerWidth > 576) {
-          activateCube();
+          project.activateCube();
 
-          // Ambil semua H1 dari project LAIN, lalu turunkan opacity-nya
           projectsA.forEach((otherProject) => {
             if (otherProject !== project) {
               const otherSides = otherProject.querySelectorAll("h1");
@@ -470,9 +478,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       project.addEventListener("mouseleave", () => {
         if (window.innerWidth > 576) {
-          deactivateCube();
+          project.deactivateCube();
 
-          // Kembalikan semua H1 di SEMUA project ke opacity penuh
           projectsA.forEach((p) => {
             const allSides = p.querySelectorAll("h1");
             gsap.to(allSides, {
@@ -484,48 +491,24 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
       });
+    });
 
-      project.addEventListener("click", (e) => {
-        if (window.innerWidth <= 576) {
-          if (!project.isHovered) {
-            e.preventDefault();
-            projectsA.forEach((p) => {
-              if (p !== project && p.isHovered) {
-                const otherCube = p.querySelector(".cube");
-                p.isHovered = false;
-                gsap.to(otherCube, {
-                  z: 0,
-                  duration: 0.5,
-                  ease: "power3.out",
-                  overwrite: "auto",
-                });
-                p.querySelectorAll("h1 span[data-char]").forEach(
-                  (s) => (s.style.color = "var(--primary)"),
-                );
-              }
+    function triggerGlobalRotation() {
+      gsap.to(document.querySelectorAll(".project .cube"), {
+        rotationY: (index, target) => {
+          const parentProject = target.closest(".project");
+          if (parentProject.isHovered) return parentProject.currentSide * -90;
 
-              // Handler opacity untuk device mobile / touch
-              const sides = p.querySelectorAll("h1");
-              gsap.to(sides, {
-                opacity: p === project ? 1 : 0.4,
-                duration: 0.3,
-                overwrite: "auto",
-              });
-            });
-            activateCube();
-          }
-        }
+          parentProject.currentSide++;
+          return parentProject.currentSide * -90;
+        },
+        duration: 1,
+        ease: "power3.inOut",
+        stagger: 0.3,
       });
-    });
-
-    // PARALLAX TILT CONTAINER (Tetap seperti kemarin)
-    window.addEventListener("mousemove", (e) => {
-      if (window.innerWidth <= 576) return;
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-      mouse.x = (e.clientX - centerX) / centerX;
-      mouse.y = (e.clientY - centerY) / centerY;
-    });
+      gsap.delayedCall(2.5, triggerGlobalRotation);
+    }
+    gsap.delayedCall(1.5, triggerGlobalRotation);
 
     gsap.ticker.add(() => {
       if (window.innerWidth > 576) {
@@ -541,7 +524,121 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  window.addEventListener("load", init3DCubes);
+  // Inisialisasilangsung
+  init3DCubes();
+
+  // --- LOGIC VIEW PROJECTS (CUBE ROLL & MOBILE CLICK) ---
+  projectsA.forEach((li, index) => {
+    li.addEventListener("click", (e) => {
+      if (window.innerWidth <= 1200) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        // 1. Jalankan Glitch TV
+        const img = li.getAttribute("data-img");
+        if (img) setDisplayImage(img);
+        if (typeof playGlitchSound === "function") playGlitchSound();
+
+        // 2. Logic Gulir Kubus View Wrapper (RotationX)
+        gsap.to(".view-wrapper", {
+          rotationX: index * 90,
+          duration: 0.5,
+          ease: "power4.out",
+        });
+      }
+
+      // 3. LOGIKA OPACITY & 3D CUBE UNTUK MOBILE (DIPINDAH KE SINI)
+      if (window.innerWidth <= 576) {
+        if (!li.isHovered) {
+          projectsA.forEach((p) => {
+            const targetSides = p.querySelectorAll("h1");
+            const otherCube = p.querySelector(".cube");
+
+            if (p !== li) {
+              p.isHovered = false;
+
+              if (p.scrambleTween) p.scrambleTween.kill();
+
+              gsap.to(otherCube, {
+                z: 0,
+                duration: 0.5,
+                ease: "power3.out",
+                overwrite: "auto",
+              });
+
+              p.querySelectorAll("h1 span[data-char]").forEach((s) => {
+                s.style.color = "var(--primary)";
+              });
+
+              gsap.to(targetSides, {
+                opacity: 0.4,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            } else {
+              gsap.to(targetSides, {
+                opacity: 1,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            }
+          });
+
+          if (typeof li.activateCube === "function") {
+            li.activateCube();
+          }
+        }
+      }
+    });
+
+    li.addEventListener("mouseenter", () => {
+      if (window.innerWidth > 1200) {
+        const img = li.getAttribute("data-img");
+        if (img) setDisplayImage(img);
+        if (typeof playGlitchSound === "function") playGlitchSound();
+      }
+    });
+  });
+
+  // --- LOGIKA RESET SAAT KLIK DI LUAR PROJECTS (CLICK OUTSIDE) ---
+  document.addEventListener("click", (e) => {
+    if (window.innerWidth <= 576) {
+      const isClickedOnProject = e.target.closest(".projects .project");
+
+      if (!isClickedOnProject) {
+        projectsA.forEach((p) => {
+          p.isHovered = false;
+
+          if (p.scrambleTween) p.scrambleTween.kill();
+
+          const targetSides = p.querySelectorAll("h1");
+          const otherCube = p.querySelector(".cube");
+
+          if (otherCube) {
+            gsap.to(otherCube, {
+              z: 0,
+              duration: 0.5,
+              ease: "power3.out",
+              overwrite: "auto",
+            });
+          }
+
+          p.querySelectorAll("h1 span[data-char]").forEach((s) => {
+            s.style.color = "var(--primary)";
+          });
+
+          gsap.to(targetSides, {
+            opacity: 1,
+            duration: 0.3,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        });
+      }
+    }
+  });
 
   // --- TIME FOOTER ---
   const updateTime = () => {
@@ -564,21 +661,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateTime();
 
   // --- LOADING & TRANSITION LOGIC ---
-  function requestOrientationPermission() {
-    // Cek apakah browser butuh izin (khusus iOS/Safari modern)
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function"
-    ) {
-      DeviceOrientationEvent.requestPermission()
-        .then((permissionState) => {
-          if (permissionState === "granted") {
-          }
-        })
-        .catch(console.error);
-    }
-  }
-
   const loaderNum = document.getElementById("loader-number");
 
   function entryLoader() {
@@ -615,6 +697,63 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  gsap.set("nav", {
+    top: "-5rem",
+  });
+  gsap.set(".projects", {
+    scale: 0,
+  });
+  gsap.set(".footer-wrapper .ofh h4, .footer-wrapper .ofh p", {
+    y: "100%",
+  });
+
+  // --- INTRO ANIMATION LOGIC ---
+  function playIntroAnimation() {
+    const tl = gsap.timeline();
+
+    // 1. Animasi Kamera Zoom-In lembut dari kejauhan
+    const targetCameraZ = window.innerWidth <= 768 ? 2 : 1.5;
+    const targetCameraY = window.innerWidth <= 768 ? 0.5 : 0.4;
+
+    gsap.fromTo(
+      camera.position,
+      { z: targetCameraZ + 1.2, y: targetCameraY + 0.3 },
+      {
+        z: targetCameraZ,
+        y: targetCameraY,
+        duration: 1.8,
+        ease: "power3.out",
+      },
+    );
+
+    // 2. Animasi UI Elements (Nav, Projects, Footer)
+    tl.to("nav", {
+      top: "1.5rem", // atau style top default nav kamu
+      duration: 1,
+      delay: 1,
+      ease: "power4.out",
+    })
+      .to(
+        ".projects",
+        {
+          scale: 1,
+          duration: 1.2,
+          ease: "back.out(1.4)", // Efek pop-out membal yang halus
+        },
+        "-=0.6", // Stagger agar overlap dengan animasi nav
+      )
+      .to(
+        ".footer-wrapper .ofh h4, .footer-wrapper .ofh p",
+        {
+          y: "0%",
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "power3.out",
+        },
+        "-=0.8",
+      );
+  }
+
   function showEnterButton() {
     const enterOverlay = document.getElementById("enter-overlay");
     const enterBtn = document.getElementById("enter-btn");
@@ -628,10 +767,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     enterBtn.onclick = () => {
-      // 2. REVISI DI SINI: Panggil izin sensor saat klik Enter
-      requestOrientationPermission();
-
       if (window.revealTransition) window.revealTransition();
+
+      playIntroAnimation();
+
       gsap.to(enterBtn, {
         translateY: "100%",
         duration: 0.5,
@@ -648,7 +787,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Manager Events
   loadingManager.onStart = () => entryLoader();
   loadingManager.onProgress = (url, loaded, total) =>
     updateLoader(loaded / total);
@@ -657,157 +795,18 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => exitLoader(), 500);
   };
 
-  // Trigger initial visual state
   entryLoader();
 
-  // --- LOGIC VIEW PROJECTS (CUBE ROLL) ---
-  const viewWrapper = document.querySelector(".view-wrapper");
-  const projects = document.querySelectorAll(".projects .project");
-  let currentCubeRotation = 0;
-  let lastIndex = 0;
-
-  projects.forEach((li, index) => {
-    // KITA SATUKAN DI SINI BIAR TIDAK SALING BLOKIR
-    li.addEventListener("click", (e) => {
-      if (window.innerWidth <= 1200) {
-        // MATIKAN NAVIGASI TOTAL
-        e.preventDefault();
-        e.stopImmediatePropagation();
-
-        // 1. Jalankan Glitch TV
-        const img = li.getAttribute("data-img");
-        if (img) setDisplayImage(img);
-        playGlitchSound();
-
-        // 3. Logic Gulir Kubus (RotationX)
-        gsap.to(".view-wrapper", {
-          rotationX: index * 90,
-          duration: 0.5,
-          ease: "power4.out",
-        });
-      }
-
-      // 4. LOGIKA OPACITY & 3D CUBE UNTUK MOBILE (DIPINDAH KE SINI)
-      if (window.innerWidth <= 576) {
-        // Anggap 'li' adalah 'project' yang sedang di-tap
-        if (!li.isHovered) {
-          // Loop ke semua project untuk mengatur opacity h1 & reset state project lain
-          projectsA.forEach((p) => {
-            const targetSides = p.querySelectorAll("h1");
-            const otherCube = p.querySelector(".cube");
-
-            if (p !== li) {
-              p.isHovered = false;
-
-              if (p.scrambleTween) p.scrambleTween.kill();
-
-              gsap.to(otherCube, {
-                z: 0,
-                duration: 0.5,
-                ease: "power3.out",
-                overwrite: "auto",
-              });
-
-              p.querySelectorAll("h1 span[data-char]").forEach((s) => {
-                s.style.color = "var(--primary)";
-              });
-
-              // Redupkan h1 project lain
-              gsap.to(targetSides, {
-                opacity: 0.4,
-                duration: 0.3,
-                ease: "power2.out",
-                overwrite: "auto",
-              });
-            } else {
-              // Terangkan h1 project yang sedang di-tap aktif
-              gsap.to(targetSides, {
-                opacity: 1,
-                duration: 0.3,
-                ease: "power2.out",
-                overwrite: "auto",
-              });
-            }
-          });
-
-          // Panggil fungsi activateCube bawaan project ini (bisa diakses jika fungsinya global atau di dalam scope yang sama)
-          // Jika activateCube() tidak terbaca di scope ini, pindahkan triggers pemicunya ke sini.
-          if (typeof activateCube === "function") {
-            activateCube();
-          } else if (li.activateCube) {
-            li.activateCube(); // Jika di-bind ke elemennya
-          }
-        }
-      }
-    });
-
-    // Tetap aktifkan hover untuk desktop (biar aman)
-    li.addEventListener("mouseenter", () => {
-      if (window.innerWidth > 1200) {
-        const img = li.getAttribute("data-img");
-        if (img) setDisplayImage(img);
-        playGlitchSound();
-      }
-    });
-  });
-
-  // === LOGIKA RESET SAAT KLIK DI LUAR PROJECTS (CLICK OUTSIDE) ===
-  document.addEventListener("click", (e) => {
-    // Hanya jalankan logika reset ini di versi mobile (di bawah 576px)
-    if (window.innerWidth <= 576) {
-      // Cek apakah area yang diklik berada di dalam element .project
-      const isClickedOnProject = e.target.closest(".projects .project");
-
-      // Jika user mengklik di luar seluruh element project, kita reset semuanya!
-      if (!isClickedOnProject) {
-        projects.forEach((p) => {
-          p.isHovered = false;
-
-          // Hentikan paksa scramble tween jika ada yang masih jalan
-          if (p.scrambleTween) p.scrambleTween.kill();
-
-          const targetSides = p.querySelectorAll("h1");
-          const otherCube = p.querySelector(".cube");
-
-          // 1. Kembalikan posisi 3D Cube ke semula (Z: 0)
-          if (otherCube) {
-            gsap.to(otherCube, {
-              z: 0,
-              duration: 0.5,
-              ease: "power3.out",
-              overwrite: "auto",
-            });
-          }
-
-          // 2. Kembalikan warna huruf ke warna utama
-          p.querySelectorAll("h1 span[data-char]").forEach((s) => {
-            s.style.color = "var(--primary)";
-          });
-
-          // 3. Kembalikan opacity h1 semua project ke terang benderang (1.0)
-          gsap.to(targetSides, {
-            opacity: 1, // <--- Kunci utama untuk mengembalikan opacity yang memudar
-            duration: 0.3,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-        });
-      }
-    }
-  });
-
-  // --- LOGIC KAMERA RESPONSIVE (768px) ---
+  // --- LOGIC KAMERA RESPONSIVE ---
   function adjustCamera() {
     if (window.innerWidth <= 768) {
-      // Kamera menjauh di mobile agar monitor tidak kepotong
       gsap.to(camera.position, {
-        z: 2, // Angka lebih besar = lebih jauh
+        z: 2,
         y: 0.5,
         duration: 1.2,
         ease: "power3.out",
       });
     } else {
-      // Kamera kembali ke posisi default desktop
       gsap.to(camera.position, {
         z: 1.5,
         y: 0.4,
@@ -817,9 +816,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Panggil saat load dan saat resize
   adjustCamera();
-  window.addEventListener("resize", adjustCamera);
 });
 
 function initEnterBtnScramble() {
@@ -908,3 +905,110 @@ function initEnterBtnScramble() {
 
 // Jalankan fungsinya setelah DOM siap
 document.addEventListener("DOMContentLoaded", initEnterBtnScramble);
+
+function initHeroTextRotator() {
+  const targetTextElement = document.querySelector(
+    ".footer-wrapper .text-change",
+  );
+  if (!targetTextElement) return;
+
+  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
+
+  const wordsList = ["Creative Developer", "Visual Designer"];
+
+  let currentWordIndex = 0;
+  let rotatorTween = null;
+
+  // 1. SPLITTING AWAL (Menggunakan kata pertama)
+  function initSplit(text) {
+    let splitHTML = "";
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === " ") {
+        splitHTML += `<span>&nbsp;</span>`;
+      } else {
+        splitHTML += `<span class="rotator-char" data-char="${text[i]}">${text[i]}</span>`;
+      }
+    }
+    targetTextElement.innerHTML = splitHTML;
+  }
+
+  // 2. FUNGSI UTAMA: SATU OMBAK LANGSUNG SWAP KATA
+  function triggerOneWaveTransition() {
+    const oldWord = wordsList[currentWordIndex];
+    currentWordIndex = (currentWordIndex + 1) % wordsList.length;
+    const nextWord = wordsList[currentWordIndex];
+
+    // Cari tahu jumlah karakter terbanyak antara kata lama vs kata baru
+    // Ini penting supaya tidak ada huruf yang kepotong di tengah jalan
+    const maxLength = Math.max(oldWord.length, nextWord.length);
+
+    // RE-STRUCTURE SPAN: Samakan jumlah span dengan maxLength sebelum animasi jalan
+    let splitHTML = "";
+    for (let i = 0; i < maxLength; i++) {
+      // Ambil huruf lama sebagai tampilan awal sebelum disapu ombak
+      const initialChar = oldWord[i] || " ";
+      // Ambil target huruf baru yang akan muncul setelah ombak lewat
+      const targetChar = nextWord[i] || " ";
+
+      if (initialChar === " " && targetChar === " ") {
+        splitHTML += `<span>&nbsp;</span>`;
+      } else {
+        // Simpan karakter lama di innerText, dan target baru di data-char!
+        const displayChar = initialChar === " " ? "&nbsp;" : initialChar;
+        splitHTML += `<span class="rotator-char" data-char="${targetChar}">${displayChar}</span>`;
+      }
+    }
+    targetTextElement.innerHTML = splitHTML;
+
+    const letterSpans = targetTextElement.querySelectorAll("span.rotator-char");
+    let progressObj = { value: 0 };
+
+    if (rotatorTween) rotatorTween.kill();
+
+    // TEMBAK SATU OMBAK KONTINU (Dibuat sedikit lebih lama: 0.9 detik biar megah)
+    rotatorTween = gsap.to(progressObj, {
+      value: 1,
+      duration: 0.9,
+      ease: "power1.inOut",
+      onUpdate: () => {
+        const wavePosition = progressObj.value * (maxLength + 3);
+
+        letterSpans.forEach((span, i) => {
+          const targetChar = span.getAttribute("data-char");
+
+          if (i < wavePosition - 2.5) {
+            // A. EKOR OMBAK: Teks sudah berubah total jadi kalimat baru
+            if (targetChar === " ") {
+              span.innerHTML = "&nbsp;";
+            } else {
+              span.innerText = targetChar;
+            }
+            span.style.color = "var(--primary)"; // Berwarna terang benderang
+          } else if (i < wavePosition) {
+            // B. INTI OMBAK: Proses pengacakan matrix (Glitch Biru)
+            const randomChar =
+              randomChars[Math.floor(Math.random() * randomChars.length)];
+            span.innerText = randomChar;
+            span.style.color = "var(--blue)";
+          }
+          // C. DEPAN OMBAK: Tetap menampilkan kalimat lama (tidak disentuh, warna tidak berubah)
+        });
+      },
+      onComplete: () => {
+        // Bersihkan spasi kosong berlebih di akhir kata jika kalimat baru lebih pendek
+        // Biar DOM-nya tetep clean
+        initSplit(nextWord);
+
+        // TUNGGU 3 DETIK, LALU GANTI KATA LAGI
+        gsap.delayedCall(3, triggerOneWaveTransition);
+      },
+    });
+  }
+
+  // JALANKAN PERTAMA KALI
+  initSplit(wordsList[0]);
+  gsap.delayedCall(3, triggerOneWaveTransition);
+}
+
+// Jalankan saat DOM siap
+document.addEventListener("DOMContentLoaded", initHeroTextRotator);
