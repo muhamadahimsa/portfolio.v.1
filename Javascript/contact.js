@@ -274,7 +274,7 @@ function loadModels() {
       wrapper.add(model);
 
       // --- FINE TUNING MANUAL ---
-      if (i === 1) model.scale.multiplyScalar(1.1);
+      if (i === 1) model.scale.multiplyScalar(0.5);
       if (i === 2) model.scale.multiplyScalar(0.7);
       if (i === 3) model.scale.multiplyScalar(0.8);
       if (i === 4) model.scale.multiplyScalar(0.8);
