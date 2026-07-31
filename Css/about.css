@@ -175,6 +175,7 @@ p.info-title {
   overflow: hidden;
   position: relative;
   cursor: pointer;
+  border-radius: 2px;
 }
 .btn-container {
   display: flex;
@@ -265,6 +266,7 @@ h1 {
   overflow: hidden;
   position: relative;
   padding: 0 0.5rem;
+  border-radius: 2px;
 }
 .ascii-btn .btn-container {
   display: flex;

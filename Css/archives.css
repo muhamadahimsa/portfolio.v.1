@@ -79,6 +79,7 @@ canvas {
   color: var(--secondary);
   overflow: hidden;
   position: relative;
+  border-radius: 2px;
 }
 .archives-btn .btn-container {
   display: flex;
