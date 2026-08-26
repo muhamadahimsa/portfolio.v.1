@@ -100,8 +100,10 @@ setTimeout(() => {
 // --- MODEL SWITCHING LOGIC (Update untuk allContactRows) ---
 let lastCenteredRow = null;
 let currentModelIndex = 0;
+let scrollRotationY = 0;
 
 lenis.on("scroll", () => {
+  scrollRotationY = window.scrollY * 0.005;
   // Gunakan allContactRows yang sudah di-update di setTimeout
   if (!allContactRows.length) return;
 
@@ -273,6 +275,8 @@ function loadModels() {
       const wrapper = new THREE.Group();
       wrapper.add(model);
 
+      wrapper.userData.innerModel = model;
+
       // --- FINE TUNING MANUAL ---
       if (i === 1) model.scale.multiplyScalar(0.5);
       if (i === 2) model.scale.multiplyScalar(0.7);
@@ -290,7 +294,6 @@ function loadModels() {
 }
 
 function animate() {
-  // Kalau user pindah tab, jangan render apa-apa
   if (document.hidden) {
     requestAnimationFrame(animate);
     return;
@@ -298,14 +301,21 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  // Kalkulasi lerp rotation tetap di sini
+  // 1. Tilt dari Mouse pada Wrapper
   targetRotation.x += (mouse.y * 0.5 - targetRotation.x) * 0.05;
   targetRotation.y += (mouse.x * 0.5 - targetRotation.y) * 0.05;
 
   models.forEach((wrapper) => {
     if (wrapper && wrapper.visible) {
+      // Wrapper tetap menangani parallax / tilt mouse
       wrapper.rotation.y = targetRotation.y;
       wrapper.rotation.x = targetRotation.x;
+
+      // InnerModel berputar KANAN - KIRI berdasarkan Scroll
+      if (wrapper.userData.innerModel) {
+        // Ganti .x menjadi .y di sini!
+        wrapper.userData.innerModel.rotation.y = scrollRotationY;
+      }
     }
   });
 
