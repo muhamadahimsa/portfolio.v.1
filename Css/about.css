@@ -252,73 +252,8 @@ h1 {
   z-index: 5;
 }
 
-.ascii-btn {
-  position: fixed;
-  top: 50%;
-  right: 2rem;
-  transform: translateY(-50%);
-  z-index: 10;
-}
-.ascii-btn .--button .btn-wrapper {
-  display: block;
-  background: var(--primary);
-  color: var(--secondary);
-  overflow: hidden;
-  position: relative;
-  padding: 0 0.5rem;
-  border-radius: 2px;
-}
-.ascii-btn .btn-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  gap: 0.25rem;
-  padding: 0.5rem 0.8rem;
-  cursor: pointer;
-}
-.ascii-btn .btn-text {
-  position: relative;
-  font-weight: 600;
-  font-size: 11px;
-  padding: 0.5rem 1rem;
-  text-transform: uppercase;
-  transition: 0.3s ease-out;
-  will-change: transform;
-  z-index: 2;
-}
-.ascii-btn .btn-text.active-text {
-  color: var(--primary);
-}
-.btn-active {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 0;
-  background-color: var(--secondary);
-  border-radius: 2px;
-  z-index: 1;
-  pointer-events: none;
-  will-change: transform, height, top;
-}
-
-.ascii-img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 95%;
-  height: 100%;
-  z-index: 2;
-  opacity: 0;
-  pointer-events: none;
-}
-.ascii-img img {
-  display: none;
-}
-
 /* Laptop & Tablet Landscape */
-@media (max-width: 1200px) {
+@media (max-width: 1250px) {
   .info-btn {
     bottom: 10rem;
   }
@@ -342,7 +277,7 @@ h1 {
   }
 
   .hero-bottom {
-    width: 48%;
+    width: 45%;
   }
 }
 
@@ -424,19 +359,12 @@ h1 {
     bottom: 6rem;
   }
 
-  .crosshair {
-    display: none;
-  }
-  .dot {
-    display: none;
-  }
-
   h1 {
     font-size: 1.75rem;
   }
 
   .info-btn .--button .btn-wrapper {
-    width: 40vw;
+    width: 35vw;
   }
   .info-btn .--button .btn-container {
     width: 100%;
@@ -444,28 +372,13 @@ h1 {
     justify-content: space-between;
   }
   .info-btn .--button .btn-container span {
-    font-size: 16px;
-  }
-
-  .ascii-btn {
-    right: 1.5rem;
-  }
-  .ascii-btn .btn-container{
-    padding: 0.5rem 0;
+    font-size: 14px;
   }
 
   #imageContainer > * {
     top: 50%;
     transform: translateY(-50%);
     height: 75vh !important;
-  }
-
-  .ascii-img {
-    top: 3%;
-    left: 2%;
-    width: 100%;
-    height: 100%;
-    scale: 0.8;
   }
 }
 
