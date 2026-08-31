@@ -309,15 +309,194 @@ const infoToggle = document.querySelector(".info-btn");
 const infoClose = document.querySelector(".info-close");
 const infos = document.querySelector(".info");
 
+const { Engine, Runner, World, Bodies, Body, Events } = Matter;
+const engine = Engine.create({
+  gravity: { x: 0, y: 0 },
+});
+
+const runner = Runner.create();
+Runner.run(runner, engine);
+
+const items = document.querySelectorAll(".item");
+
+// Helper untuk reset inline style sementara agar bisa baca posisi asli CSS layout
+function getOriginCSSPositions() {
+  const savedStyles = Array.from(items).map((item) => ({
+    top: item.style.top,
+    left: item.style.left,
+    transform: item.style.transform,
+  }));
+
+  // Clear style sementara
+  items.forEach((item) => {
+    item.style.top = "";
+    item.style.left = "";
+    item.style.transform = "";
+  });
+
+  // Ambil koordinat layout murni CSS
+  const positions = Array.from(items).map((item) => {
+    const rect = item.getBoundingClientRect();
+    const containerRect = item.parentElement.getBoundingClientRect();
+    return {
+      x: rect.left - containerRect.left + item.offsetWidth / 2,
+      y: rect.top - containerRect.top + item.offsetHeight / 2,
+      width: item.offsetWidth,
+      height: item.offsetHeight,
+    };
+  });
+
+  // Kembalikan style fisika Matter.js
+  items.forEach((item, index) => {
+    item.style.top = savedStyles[index].top;
+    item.style.left = savedStyles[index].left;
+    item.style.transform = savedStyles[index].transform;
+  });
+
+  return positions;
+}
+
+// Inisialisasi Posisi Awal
+let initialPositions = getOriginCSSPositions();
+
+const bodies = Array.from(items).map((item, index) => {
+  const pos = initialPositions[index];
+  const body = Bodies.rectangle(pos.x, pos.y, pos.width, pos.height, {
+    restitution: 0.75,
+    friction: 0.5,
+    frictionAir: 0.0175,
+    isStatic: true,
+  });
+  World.add(engine.world, body);
+  return body;
+});
+
+// Sync awal posisi elemen ke body Matter.js
+bodies.forEach((body, index) => {
+  const item = items[index];
+  item.style.top = `${body.position.y}px`;
+  item.style.left = `${body.position.x}px`;
+  item.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
+});
+
+// Floor
+let floor = Bodies.rectangle(
+  window.innerWidth / 2,
+  window.innerHeight + 10,
+  window.innerWidth * 2,
+  40,
+  { isStatic: true }
+);
+World.add(engine.world, floor);
+
+let gravityEnabled = false;
+let duration = 0.75;
+const easeOutQuad = (t) => t * (2 - t);
+
+// Resize Handler
+window.addEventListener("resize", () => {
+  Body.setPosition(floor, {
+    x: window.innerWidth / 2,
+    y: window.innerHeight + 10,
+  });
+
+  // Update target posisi asli CSS setiap layar berubah
+  initialPositions = getOriginCSSPositions();
+
+  if (!gravityEnabled) {
+    bodies.forEach((body, index) => {
+      const pos = initialPositions[index];
+      Body.setPosition(body, { x: pos.x, y: pos.y });
+      Body.setAngle(body, 0);
+    });
+  }
+});
+
+// --- TOGGLE HANDLERS ---
 infoToggle.addEventListener("click", () => {
-  // infos.classList.add("active");
-  document.body.style.overflow = "hidden"; // Supaya body gak ikut scroll
-  infosLenis.scrollTo(0, { immediate: true });
+  if (isAnimating) return;
+  isAnimating = true;
+
+  document.body.style.overflow = "hidden";
+  if (typeof infosLenis !== "undefined") {
+    infosLenis.scrollTo(0, { immediate: true });
+  }
+
+  if (!gravityEnabled) {
+    engine.world.gravity.y = 1;
+    bodies.forEach((body) => {
+      Body.setStatic(body, false);
+      Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.25);
+    });
+    gravityEnabled = true;
+  }
+
+  setTimeout(() => {
+    isAnimating = false;
+  }, 1000);
 });
 
 infoClose.addEventListener("click", () => {
-  // infos.classList.remove("active");
-  document.body.style.overflow = "auto"; // Normal lagi
+  if (isAnimating) return;
+  isAnimating = true;
+
+  document.body.style.overflow = "auto";
+
+  if (gravityEnabled) {
+    // Matiin gravitasi langsung biar objek gak makin meluncur turun saat nunggu delay
+    engine.world.gravity.y = 0;
+
+    // --- DELAY 1 DETIK SEBELUM ANIMASI POSISI JALAN ---
+    setTimeout(() => {
+      bodies.forEach((body, index) => {
+        Body.setStatic(body, true);
+        const startPos = { x: body.position.x, y: body.position.y };
+        const startAngle = body.angle;
+        const endPos = {
+          x: initialPositions[index].x,
+          y: initialPositions[index].y,
+        };
+        const endAngle = 0;
+        const startTime = performance.now();
+
+        const animateBack = (currentTime) => {
+          const elapsedTime = (currentTime - startTime) / 1000;
+          const t = Math.min(elapsedTime / duration, 1);
+          const easedT = easeOutQuad(t);
+
+          const x = startPos.x + easedT * (endPos.x - startPos.x);
+          const y = startPos.y + easedT * (endPos.y - startPos.y);
+          const angle = startAngle + easedT * (endAngle - startAngle);
+
+          Body.setPosition(body, { x, y });
+          Body.setAngle(body, angle);
+
+          if (t < 1) {
+            requestAnimationFrame(animateBack);
+          }
+        };
+
+        requestAnimationFrame(animateBack);
+      });
+
+      gravityEnabled = false;
+    }, 1000); // <--- Delay 1000ms (1 detik)
+  }
+
+  // Timeout disesuaikan (1000ms delay + 1000ms waktu animasi = 2000ms total)
+  setTimeout(() => {
+    isAnimating = false;
+  }, 2000);
+});
+
+// Loop Animasi Sync Matter.js -> DOM
+Events.on(engine, "afterUpdate", () => {
+  bodies.forEach((body, index) => {
+    const item = items[index];
+    item.style.top = `${body.position.y}px`;
+    item.style.left = `${body.position.x}px`;
+    item.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
+  });
 });
 
 // 1. Lenis Utama untuk Body (Meski 100vh, tetap biarkan ada)
@@ -529,7 +708,7 @@ function initAsciiBtnScramble() {
   const btnTexts = asciiBtn.querySelectorAll(".btn-text");
 
   // --- HELPER FUNCTION 1: UPDATE WARNA SEMUA TOMBOL ---
-  // Fungsi ini bertugas memaksa semua huruf kembali ke warna yang benar 
+  // Fungsi ini bertugas memaksa semua huruf kembali ke warna yang benar
   // sesuai status `.active-text` terbarunya (sangat krusial untuk mobile)
   function resetAllButtonColors() {
     btnTexts.forEach((btn) => {
@@ -538,8 +717,8 @@ function initAsciiBtnScramble() {
 
       letterSpans.forEach((span) => {
         // Hentikan tween warna individu yang sedang berjalan agar tidak tabrakan
-        gsap.killTweensOf(span); 
-        
+        gsap.killTweensOf(span);
+
         span.innerText = span.getAttribute("data-char");
         span.style.color = isActive ? "var(--primary)" : "var(--secondary)";
       });
@@ -572,7 +751,8 @@ function initAsciiBtnScramble() {
               span.style.color = "var(--secondary)";
             }
           } else if (i < wavePosition) {
-            const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+            const randomChar =
+              randomChars[Math.floor(Math.random() * randomChars.length)];
             span.innerText = randomChar;
             span.style.color = "var(--blue)";
           } else {
@@ -648,12 +828,12 @@ function initAsciiBtnScramble() {
     // --- 4. LOGIKA KLIK DI VERSI MOBILE (< 768px) ---
     btn.addEventListener("click", () => {
       if (window.innerWidth < 768) {
-        // Berikan delay sangat tipis (10-50ms) menggunakan setTimeout 
+        // Berikan delay sangat tipis (10-50ms) menggunakan setTimeout
         // agar JS memberikan waktu bagi script toggle-class kamu untuk memindahkan class '.active-text' terlebih dahulu
         setTimeout(() => {
           // 1. Reset dan samakan warna semua tombol sesuai state active/inactive terbarunya
           resetAllButtonColors();
-          
+
           // 2. Jalankan efek scramble khusus untuk tombol yang baru saja diklik
           runScrambleAnimation(btn);
         }, 50);
@@ -666,7 +846,7 @@ function initAsciiBtnScramble() {
 document.addEventListener("DOMContentLoaded", initAsciiBtnScramble);
 
 function initHeroTextRotator() {
-  const targetTextElement = document.querySelector(".hero-top .text-change");
+  const targetTextElement = document.querySelector(".item-2 .text-change");
   if (!targetTextElement) return;
 
   const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
@@ -674,7 +854,7 @@ function initHeroTextRotator() {
   const wordsList = [
     "Creative Developer",
     "Visual Designer",
-    "a Mother's Boy",
+    "Design Engineer",
     "a Human like You",
   ];
 
@@ -700,25 +880,15 @@ function initHeroTextRotator() {
     currentWordIndex = (currentWordIndex + 1) % wordsList.length;
     const nextWord = wordsList[currentWordIndex];
 
-    // Cari tahu jumlah karakter terbanyak antara kata lama vs kata baru
-    // Ini penting supaya tidak ada huruf yang kepotong di tengah jalan
     const maxLength = Math.max(oldWord.length, nextWord.length);
 
-    // RE-STRUCTURE SPAN: Samakan jumlah span dengan maxLength sebelum animasi jalan
     let splitHTML = "";
     for (let i = 0; i < maxLength; i++) {
-      // Ambil huruf lama sebagai tampilan awal sebelum disapu ombak
       const initialChar = oldWord[i] || " ";
-      // Ambil target huruf baru yang akan muncul setelah ombak lewat
       const targetChar = nextWord[i] || " ";
 
-      if (initialChar === " " && targetChar === " ") {
-        splitHTML += `<span>&nbsp;</span>`;
-      } else {
-        // Simpan karakter lama di innerText, dan target baru di data-char!
-        const displayChar = initialChar === " " ? "&nbsp;" : initialChar;
-        splitHTML += `<span class="rotator-char" data-char="${targetChar}">${displayChar}</span>`;
-      }
+      const displayChar = initialChar === " " ? "&nbsp;" : initialChar;
+      splitHTML += `<span class="rotator-char" data-char="${targetChar}" style="display:inline-block; min-width:1ch;">${displayChar}</span>`;
     }
     targetTextElement.innerHTML = splitHTML;
 
@@ -727,11 +897,10 @@ function initHeroTextRotator() {
 
     if (rotatorTween) rotatorTween.kill();
 
-    // TEMBAK SATU OMBAK KONTINU (Dibuat sedikit lebih lama: 0.9 detik biar megah)
     rotatorTween = gsap.to(progressObj, {
       value: 1,
-      duration: 0.9,
-      ease: "power1.inOut",
+      duration: 1,
+      ease: "power2.inOut",
       onUpdate: () => {
         const wavePosition = progressObj.value * (maxLength + 3);
 
@@ -739,29 +908,36 @@ function initHeroTextRotator() {
           const targetChar = span.getAttribute("data-char");
 
           if (i < wavePosition - 2.5) {
-            // A. EKOR OMBAK: Teks sudah berubah total jadi kalimat baru
-            if (targetChar === " ") {
+            // A. EKOR OMBAK
+            if (i >= nextWord.length) {
+              // HANYA sembunyikan karakter sisa di luar panjang kata baru
+              span.style.display = "none";
+            } else if (targetChar === " ") {
+              // JIKA ini spasi antar kata, TAMPILKAN sebagai spasi (&nbsp;)
+              span.style.display = "inline-block";
               span.innerHTML = "&nbsp;";
             } else {
+              // Karakter biasa
+              span.style.display = "inline-block";
               span.innerText = targetChar;
+              span.style.color = "var(--primary)";
             }
-            span.style.color = "var(--primary)"; // Berwarna terang benderang
           } else if (i < wavePosition) {
-            // B. INTI OMBAK: Proses pengacakan matrix (Glitch Biru)
-            const randomChar =
-              randomChars[Math.floor(Math.random() * randomChars.length)];
-            span.innerText = randomChar;
-            span.style.color = "var(--blue)";
+            // B. INTI OMBAK: Glitch Effect
+            // Jika target asli adalah spasi, jangan beri efek glitch angka/huruf acak
+            if (targetChar === " " && i >= oldWord.length) {
+              span.innerHTML = "&nbsp;";
+            } else {
+              const randomChar =
+                randomChars[Math.floor(Math.random() * randomChars.length)];
+              span.style.display = "inline-block";
+              span.innerText = randomChar;
+              span.style.color = "var(--blue)";
+            }
           }
-          // C. DEPAN OMBAK: Tetap menampilkan kalimat lama (tidak disentuh, warna tidak berubah)
         });
       },
       onComplete: () => {
-        // Bersihkan spasi kosong berlebih di akhir kata jika kalimat baru lebih pendek
-        // Biar DOM-nya tetep clean
-        initSplit(nextWord);
-
-        // TUNGGU 3 DETIK, LALU GANTI KATA LAGI
         gsap.delayedCall(3, triggerOneWaveTransition);
       },
     });
@@ -774,114 +950,5 @@ function initHeroTextRotator() {
 
 // Jalankan saat DOM siap
 document.addEventListener("DOMContentLoaded", initHeroTextRotator);
-
-function initHeroTextBottomRotator() {
-  const targetTextElement = document.querySelector(".hero-bottom .text-change");
-  if (!targetTextElement) return;
-
-  const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
-
-  const wordsList = [
-    "ideas to life",
-    "what matters next",
-    "the unseen detail",
-    "fluid interactions",
-  ];
-
-  let currentWordIndex = 0;
-  let rotatorTween = null;
-
-  // 1. SPLITTING AWAL
-  function initSplit(text) {
-    let splitHTML = "";
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === " ") {
-        splitHTML += `<span>&nbsp;</span>`;
-      } else {
-        splitHTML += `<span class="rotator-char" data-char="${text[i]}">${text[i]}</span>`;
-      }
-    }
-    targetTextElement.innerHTML = splitHTML;
-  }
-
-  // 2. FUNGSI UTAMA: OMBAK DARI KANAN KE KIRI (RATA KANAN SAFE)
-  function triggerOneWaveTransition() {
-    const oldWord = wordsList[currentWordIndex];
-    currentWordIndex = (currentWordIndex + 1) % wordsList.length;
-    const nextWord = wordsList[currentWordIndex];
-
-    const maxLength = Math.max(oldWord.length, nextWord.length);
-
-    // PADDING STRATEGY: Masukkan spasi kosong di SEBELAH KIRI (padStart) agar teks rata kanan tetap presisi
-    const paddedOldWord = oldWord.padStart(maxLength, " ");
-    const paddedNextWord = nextWord.padStart(maxLength, " ");
-
-    let splitHTML = "";
-    for (let i = 0; i < maxLength; i++) {
-      const initialChar = paddedOldWord[i];
-      const targetChar = paddedNextWord[i];
-
-      if (initialChar === " " && targetChar === " ") {
-        splitHTML += `<span>&nbsp;</span>`;
-      } else {
-        const displayChar = initialChar === " " ? "&nbsp;" : initialChar;
-        splitHTML += `<span class="rotator-char" data-char="${targetChar}">${displayChar}</span>`;
-      }
-    }
-    targetTextElement.innerHTML = splitHTML;
-
-    const letterSpans = targetTextElement.querySelectorAll("span.rotator-char");
-    let progressObj = { value: 0 };
-
-    if (rotatorTween) rotatorTween.kill();
-
-    // TEMBAK SATU OMBAK KONTINU MUNDUR (0.9 detik)
-    rotatorTween = gsap.to(progressObj, {
-      value: 1,
-      duration: 0.9,
-      ease: "power1.inOut",
-      onUpdate: () => {
-        // Karena menyapu mundur, posisi ombak dihitung terbalik dari kanan ke kiri
-        const wavePosition = (1 - progressObj.value) * (maxLength + 3) - 3;
-
-        letterSpans.forEach((span, i) => {
-          const targetChar = span.getAttribute("data-char");
-
-          // LOGIKA TERBALIK (KANAN KE KIRI):
-          if (i > wavePosition + 2.5) {
-            // A. EKOR OMBAK (Kanan): Sudah berubah jadi kalimat baru
-            if (targetChar === " ") {
-              span.innerHTML = "&nbsp;";
-            } else {
-              span.innerText = targetChar;
-            }
-            span.style.color = "var(--primary)";
-          } else if (i > wavePosition) {
-            // B. INTI OMBAK (Tengah): Glitch acak warna biru
-            const randomChar =
-              randomChars[Math.floor(Math.random() * randomChars.length)];
-            span.innerText = randomChar;
-            span.style.color = "var(--blue)";
-          }
-          // C. DEPAN OMBAK (Kiri): Belum terkejar ombak, masih menampilkan kalimat lama
-        });
-      },
-      onComplete: () => {
-        // Kembalikan ke splitting normal tanpa padding spasi virtual agar DOM bersih
-        initSplit(nextWord);
-
-        // TUNGGU 3 DETIK, LALU SEBUT KATA BERIKUTNYA
-        gsap.delayedCall(3, triggerOneWaveTransition);
-      },
-    });
-  }
-
-  // JALANKAN PERTAMA KALI
-  initSplit(wordsList[0]);
-  gsap.delayedCall(3, triggerOneWaveTransition);
-}
-
-// Jalankan saat DOM siap
-document.addEventListener("DOMContentLoaded", initHeroTextBottomRotator);
 
 window.dispatchEvent(new Event("threejsReady"));

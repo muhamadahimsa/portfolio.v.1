@@ -15,7 +15,7 @@
 
     <link rel="stylesheet" href="./Css/setting.css" />
     <link rel="stylesheet" href="./Css/about.css" />
-    <link rel="icon" href="./Asset/Images/fav-icon.png" type="image/png">
+    <link rel="icon" href="./Asset/Images/fav-icon.png" type="image/png" />
     <title>About | Muhamad Ahimsa</title>
 
     <script type="importmap">
@@ -55,7 +55,7 @@
     <div class="site-wrapper">
       <!-- Nav -->
       <nav class="--magnetic">
-        <div class="nav-btn">
+        <div class="nav-btn item">
           <div class="btn-container">
             <div class="ofh">
               <span class="btn-text open">Menu</span>
@@ -107,23 +107,25 @@
       <div id="imageContainer">
         <img id="myImage" src="./Asset/Images/about/hero.webp" />
       </div>
-      <div class="info-btn">
+
+      <div class="container">
+        <div class="item item-1"><h1>Muhamad Ahimsa</h1></div>
+        <div class="item item-2"><h1 class="text-change">Creative Developer</h1></div>
+        <div class="item item-3"><h1>*1998</h1></div>
+        <div class="item item-4"><h1>&copy;2026</h1></div>
+      </div>
+
+      <div class="info-btn item">
         <div class="--button">
           <div class="btn-wrapper">
             <div class="btn-container">
               <span class="btn-text">Info</span>
-              <div class="arterisk"><img src="./Asset/Images/asterisk.png" alt="arterisk"></div>
+              <div class="arterisk">
+                <img src="./Asset/Images/asterisk.png" alt="arterisk" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="hero-top">
-        <h1>Muhamad Ahimsa,</h1>
-        <h1 class="text-change">Creative Developer</h1>
-      </div>
-      <div class="hero-bottom">
-        <h1>We built</h1>
-        <h1 class="text-change">ideas to life</h1>
       </div>
     </div>
 
@@ -150,9 +152,7 @@
         </div>
         <div class="info-text">
           <p class="info-title">Technologies</p>
-          <p>
-            Javascript / GSAP / Threejs / Figma / Blender / Photoshop
-          </p>
+          <p>Javascript / GSAP / Threejs / Figma / Blender / Photoshop</p>
         </div>
         <div class="info-close">
           <p>Close</p>
@@ -165,6 +165,7 @@
       <div class="info-background"></div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
     <script type="module" src="./Javascript/transition.js"></script>
     <script type="module" src="./Javascript/nav.js"></script>
     <script type="module" src="./Javascript/about.js"></script>

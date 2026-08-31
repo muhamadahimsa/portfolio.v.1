@@ -158,7 +158,7 @@ p.info-title {
 }
 
 .info-btn {
-  position: fixed;
+  position: absolute;
   bottom: 2.25rem;
   left: 50%;
   transform: translateX(-50%);
@@ -218,45 +218,59 @@ p.info-title {
 .info-btn:hover .arterisk {
   transform: rotate(270deg);
 }
-
-.hero-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 2rem;
-  color: var(--primary);
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 5;
-}
 h1 {
   text-transform: uppercase;
   font-family: "Space Mono", monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 2.75rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: -0.1rem;
-}
-.hero-bottom {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding: 2rem;
+  text-align: center;
   color: var(--primary);
-  line-height: 1;
-  width: 35%;
-  text-align: end;
+}
+.text-change {
+  display: inline-block;
+  text-align: center;
+}
+
+/* Gracity */
+.container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 5;
+  z-index: 2;
+}
+.item {
+  position: absolute;
+}
+.item-1 {
+  transform: translate(-50%, -50%);
+  top: 46.5%;
+  left: 50.4%;
+}
+.item-2 {
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  top: 50%;
+  left: 50.4%;
+  width: 14rem;
+  text-align: center;
+}
+.item-3 {
+  transform: translate(-50%, -50%);
+  top: 53.5%;
+  left: 45.9%;
+}
+.item-4 {
+  top: 53.5%;
+  left: 54.9%;
+  transform: translate(-50%, -50%);
 }
 
 /* Laptop & Tablet Landscape */
 @media (max-width: 1250px) {
-  .info-btn {
-    bottom: 10rem;
-  }
   .info-wrapper {
     width: 60vw;
     height: 100rem;
@@ -274,10 +288,6 @@ h1 {
   }
   p.info-title {
     font-size: 12px;
-  }
-
-  .hero-bottom {
-    width: 45%;
   }
 }
 
