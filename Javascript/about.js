@@ -9,27 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 // --- CONFIGURATIONS ---
 const imageContainer = document.getElementById("imageContainer");
 const imageElement = document.getElementById("myImage");
-const asciiContainer = document.querySelector(".ascii-img");
-
-// ASCII Config (B) - Versi Padat
-const ASCII_CHARS = ".:+*#%@0369"; //
-const denseCharIndex = 0; // Karena kita ingin hampir semuanya tebal
-const denseChars = ["@", "#", "%", "8", ".", ":", "*"]; // Karakter untuk efek scramble
-const FONT_SIZE = 6;
-const ASPECT_WIDTH = 16;
-const ASPEC_HEIGHT = 9;
-let ASCII_COLUMNS = 200; // Sesuaikan kerapatan
-let SCRAMBLE_COUNT = 8;
-const SCRAMBLE_SPEED_MS = 60;
-const CELL_APPEAR_MS = 1;
 let isAnimating = false;
-let animationId = null;
-let charWidth, charHeight, ASCII_ROWS;
-let PUSH_RADIUS = 10;
-const PUSH_FORCE = 0.5;
-const SPRING = 0.075;
-const DAMPING = 0.6;
-let mouse = { col: -999, row: -999, isMoving: false };
 
 // Shader Config (A)
 let easeFactor = 0.02;
@@ -379,25 +359,61 @@ bodies.forEach((body, index) => {
   item.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
 });
 
-// Floor
+// --- BINDING CONTAINER FISIKA ---
+const gravityContainer = document.querySelector(".container") || document.body;
+
+function getContainerDimensions() {
+  return {
+    width: gravityContainer.clientWidth || window.innerWidth,
+    height: gravityContainer.clientHeight || window.innerHeight,
+  };
+}
+
+let bounds = getContainerDimensions();
+
+// 1. LANTAI (FLOOR) - Lebar disesuaikan pas dengan layar
 let floor = Bodies.rectangle(
-  window.innerWidth / 2,
-  window.innerHeight + 10,
-  window.innerWidth * 2,
+  bounds.width / 2,
+  bounds.height + 20, // Taruh 20px di bawah batas layar
+  bounds.width * 1.2, // Cukup 1.2x lebar layar (tidak usah 2x)
   40,
-  { isStatic: true }
+  { isStatic: true },
 );
-World.add(engine.world, floor);
 
-let gravityEnabled = false;
-let duration = 0.75;
-const easeOutQuad = (t) => t * (2 - t);
+// 2. DINDING KIRI & KANAN (Agar elemen tidak jatuh meluncur ke luar layar HP)
+let wallLeft = Bodies.rectangle(-20, bounds.height / 2, 40, bounds.height * 2, {
+  isStatic: true,
+});
 
-// Resize Handler
+let wallRight = Bodies.rectangle(
+  bounds.width + 20,
+  bounds.height / 2,
+  40,
+  bounds.height * 2,
+  { isStatic: true },
+);
+
+World.add(engine.world, [floor, wallLeft, wallRight]);
+
+// --- UPDATE EVENT RESIZE ---
 window.addEventListener("resize", () => {
+  bounds = getContainerDimensions();
+
+  // Re-position Lantai
   Body.setPosition(floor, {
-    x: window.innerWidth / 2,
-    y: window.innerHeight + 10,
+    x: bounds.width / 2,
+    y: bounds.height + 20,
+  });
+
+  // Re-position Dinding Kiri & Kanan
+  Body.setPosition(wallLeft, {
+    x: -20,
+    y: bounds.height / 2,
+  });
+
+  Body.setPosition(wallRight, {
+    x: bounds.width + 20,
+    y: bounds.height / 2,
   });
 
   // Update target posisi asli CSS setiap layar berubah
@@ -411,6 +427,10 @@ window.addEventListener("resize", () => {
     });
   }
 });
+
+let gravityEnabled = false;
+let duration = 0.75;
+const easeOutQuad = (t) => t * (2 - t);
 
 // --- TOGGLE HANDLERS ---
 infoToggle.addEventListener("click", () => {
