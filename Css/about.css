@@ -188,7 +188,7 @@ p.info-title {
   will-change: transform;
   font-family: "Space Mono", monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.01rem;
+  letter-spacing: -0.01rem;
 }
 .info-btn .--button .btn-wrapper {
   background: var(--white);
@@ -208,8 +208,8 @@ p.info-title {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: .7rem;
-  height: .7rem;
+  width: 0.7rem;
+  height: 0.7rem;
   border-radius: 2px;
   transition: all 0.4s ease-out;
   overflow: hidden;
@@ -273,22 +273,54 @@ h1 {
 /* Laptop & Tablet Landscape */
 @media (max-width: 1250px) {
   .info-wrapper {
-    width: 60vw;
-    height: 100rem;
+    width: 40vw;
+    height: 80rem;
   }
   .info-background {
-    width: 60vw;
-    height: 100rem;
+    width: 40vw;
+    height: 80rem;
   }
   .info-bg {
-    height: 100rem;
+    height: 80rem;
   }
 
   .info-text p {
-    font-size: 1.75rem;
+    font-size: 1.35rem;
   }
   p.info-title {
     font-size: 12px;
+  }
+}
+
+@media (max-width: 1250px) {
+  .info-wrapper {
+    width: 50vw;
+    height: 90rem;
+  }
+  .info-background {
+    width: 50vw;
+    height: 90rem;
+  }
+  .info-bg {
+    height: 90rem;
+  }
+
+  .item-1 {
+    top: 48%;
+    left: 50.4%;
+  }
+  .item-2 {
+    top: 50%;
+    left: 50.4%;
+    width: 14rem;
+  }
+  .item-3 {
+    top: 52%;
+    left: 45.9%;
+  }
+  .item-4 {
+    top: 52%;
+    left: 54.9%;
   }
 }
 
@@ -326,7 +358,7 @@ h1 {
     margin: 0 auto;
     width: 100%;
     height: 100%;
-    scale: .85;
+    scale: 0.85;
   }
 }
 
@@ -348,6 +380,7 @@ h1 {
 
   .info-wrapper {
     width: 100vw;
+    padding: 3rem;
     padding-bottom: 6rem;
     height: 70rem;
   }
@@ -359,7 +392,7 @@ h1 {
     height: 70rem;
   }
   .info-text p {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     line-height: 1.2;
     letter-spacing: -0.03rem;
   }
@@ -371,7 +404,24 @@ h1 {
   }
 
   h1 {
-    font-size: 1.75rem;
+    font-size: 1rem;
+  }
+  .item-1 {
+    top: 48%;
+    left: 50.4%;
+  }
+  .item-2 {
+    top: 50%;
+    left: 50.4%;
+    width: 12rem;
+  }
+  .item-3 {
+    top: 52%;
+    left: 39.9%;
+  }
+  .item-4 {
+    top: 52%;
+    left: 60.9%;
   }
 
   .info-btn .--button .btn-wrapper {
