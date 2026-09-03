@@ -401,6 +401,7 @@ h1 {
   }
   .info-close {
     bottom: 6rem;
+    font-size: 13px;
   }
 
   h1 {
