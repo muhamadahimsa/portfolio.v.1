@@ -914,7 +914,7 @@ function initHeroTextRotator() {
 
   const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*?0123456789";
 
-  const wordsList = ["Creative Developer", "Visual Designer"];
+  const wordsList = ["Creative Developer", "Visual Designer", "Design Engineer"];
 
   let currentWordIndex = 0;
   let rotatorTween = null;
