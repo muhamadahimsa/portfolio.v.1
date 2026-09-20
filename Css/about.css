@@ -374,10 +374,6 @@ h1 {
     text-align: center;
   }
 
-  .coords {
-    display: none;
-  }
-
   .info-wrapper {
     width: 100vw;
     padding: 3rem;
@@ -425,6 +421,9 @@ h1 {
     left: 60.9%;
   }
 
+  .info-btn{
+    bottom: 5rem;
+  }
   .info-btn .--button .btn-wrapper {
     width: 35vw;
   }
