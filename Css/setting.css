@@ -270,13 +270,17 @@ nav {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.05rem;
+  /* gap: 0.05rem; */
+}
+.nav-menu-wrapper .ofh {
+  overflow: hidden;
+  position: relative;
 }
 .nav-menu-wrapper a {
   display: inline-block;
   position: relative;
   --tx: 0px;
-  --ty: 110%;
+  --ty: 100%;
   transform: translate(var(--tx), var(--ty));
   color: var(--secondary);
   transition: 0.3s ease-out;
@@ -287,19 +291,21 @@ nav {
   font-weight: 800;
   text-transform: uppercase;
   line-height: 1.1;
-  letter-spacing: -0.05rem;
   border-bottom: dashed 1px var(--secondary);
   z-index: 1;
 }
 .nav-menu-wrapper a span {
   font-size: 10px;
   position: relative;
-  transition: 0.3s ease-out;
+  z-index: 1;
 }
 .nav-menu-wrapper a p {
   position: relative;
   transition: 0.3s ease-out;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05rem;
+  margin: 0;
+  z-index: 1;
 }
 .nav-menu-wrapper a p span{
   font-size: 1.35rem;
@@ -308,19 +314,16 @@ nav {
   color: var(--primary);
   left: 10px;
 }
-.nav-menu-wrapper a::before{
+.nav-menu-wrapper .link-bg {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
-  content: '';
   width: 100%;
-  height: 0%;
-  background: var(--secondary);
-  transition: 0.3s ease-out;
-  z-index: -1;
-}
-.nav-menu-wrapper a:hover::before{
   height: 100%;
+  background: var(--secondary);
+  pointer-events: none;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
+  z-index: 0;
 }
 .nav-menu-footer{
   position: absolute;

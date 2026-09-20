@@ -1605,6 +1605,82 @@ function initCloseBtnScramble() {
   });
 }
 
+const linkBoxes = document.querySelectorAll(".box.--link");
+
+// Helper untuk mengecek apakah mouse masuk dari ATAS atau BAHWAH
+function getEntryDirection(e, element) {
+  const rect = element.getBoundingClientRect();
+  const mouseY = e.clientY - rect.top;
+  const halfHeight = rect.height / 2;
+
+  // Jika posisi klik/hover Y kurang dari setengah tinggi, berarti dari ATAS
+  return mouseY < halfHeight ? "top" : "bottom";
+}
+
+linkBoxes.forEach((box) => {
+  const bg = box.querySelector(".link-bg");
+
+  box.addEventListener("mouseenter", (e) => {
+    const direction = getEntryDirection(e, box);
+
+    if (direction === "top") {
+      // Set clip-path mulai dari ATAS (garis tipis di atas)
+      gsap.set(bg, {
+        clipPath: "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)",
+      });
+    } else {
+      // Set clip-path mulai dari Bawah (garis tipis di bawah)
+      gsap.set(bg, {
+        clipPath: "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)",
+      });
+    }
+
+    // Animasikan clip-path memenuhi seluruh area box
+    gsap.to(bg, {
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+      duration: 0.4,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  });
+
+  // Efek Mengikuti Gerakan Mouse (Parallax / Follow Effect)
+  box.addEventListener("mousemove", (e) => {
+
+    // Geser sedikit background mengikuti mouse agar terasa dinamis
+    gsap.to(bg, {
+      x: x * 0.3,
+      y: y * 0.3,
+      duration: 0.2,
+      ease: "power1.out",
+      overwrite: "auto",
+    });
+  });
+
+  box.addEventListener("mouseleave", (e) => {
+    const direction = getEntryDirection(e, box);
+
+    let targetClip;
+    if (direction === "top") {
+      // Keluar menuju ATAS
+      targetClip = "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)";
+    } else {
+      // Keluar menuju BAHWAH
+      targetClip = "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)";
+    }
+
+    // Reset posisi transform x/y dan tutup clip-path
+    gsap.to(bg, {
+      clipPath: targetClip,
+      x: 0,
+      y: 0,
+      duration: 0.3,
+      ease: "power2.in",
+      overwrite: "auto",
+    });
+  });
+});
+
 // Jalankan fungsinya setelah DOM siap
 document.addEventListener("DOMContentLoaded", initCloseBtnScramble);
 

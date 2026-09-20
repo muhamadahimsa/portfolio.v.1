@@ -1,4 +1,4 @@
-import gsap from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
+import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 
 // 1. DEKLARASI GLOBAL
 window.isOpen = false;
@@ -42,24 +42,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const lineTop = document.querySelector(".line.top");
   const lineBottom = document.querySelector(".line.bottom");
 
-  tl.to(navMenu, { opacity: 1, duration: .1 }, 0)
+  tl.to(navMenu, { opacity: 1, duration: 0.1 }, 0)
+    .to(navMenu, { height: "25rem", pointerEvents: "auto", duration: 1.0 }, 0)
     .to(
-      navMenu,
-      { height: "25rem", pointerEvents: "auto", duration: 1.0 },
-      0,
+      lineTop,
+      {
+        y: 0, // Balik ke titik 0 (tengah)
+        rotation: 45, // Putar 45 derajat
+        duration: 1,
+        ease: "power4.out",
+      },
+      0.1,
     )
-    .to(lineTop, { 
-      y: 0,          // Balik ke titik 0 (tengah)
-      rotation: 45,  // Putar 45 derajat
-      duration: 1,
-      ease: "power4.out"
-    }, 0.1)
-    .to(lineBottom, { 
-      y: 0,          // Balik ke titik 0 (tengah)
-      rotation: -45, // Putar -45 derajat
-      duration: 1,
-      ease: "power4.out"
-    }, 0.1)
+    .to(
+      lineBottom,
+      {
+        y: 0, // Balik ke titik 0 (tengah)
+        rotation: -45, // Putar -45 derajat
+        duration: 1,
+        ease: "power4.out",
+      },
+      0.1,
+    )
     .to(navPages, { "--ty": "0%", duration: 1, stagger: 0.05 }, 0.35)
     .to(navFooter, { "--ty": "0%", duration: 1, stagger: 0.05 }, 0.35)
     .to(openText, { y: "-200%", duration: 1 }, 0)
@@ -163,7 +167,7 @@ function initNavScramble() {
 
     const originalText = pTag.innerText;
     const textLength = originalText.length;
-    
+
     // 1. SPLIT TEXT: Pecah teks asli menjadi struktur span per huruf
     // Kita beri custom attribute data-char agar gampang kita manipulasi nanti
     let splitHTML = "";
@@ -191,9 +195,9 @@ function initNavScramble() {
         duration: 0.6, // Sikit dinaikkan jadi 0.6s biar durasi ngacaknya lebih puas dilihat
         ease: "power1.out",
         onUpdate: () => {
-          // Kita kalikan dengan textLength + rentang offset (misal + 3) 
+          // Kita kalikan dengan textLength + rentang offset (misal + 3)
           // agar ombak biru berjalan duluan di depan, baru disusul ombak abu-abu
-          const wavePosition = progressObj.value * (textLength + 3); 
+          const wavePosition = progressObj.value * (textLength + 3);
 
           letterSpans.forEach((span, i) => {
             const originalChar = span.getAttribute("data-char");
@@ -203,14 +207,15 @@ function initNavScramble() {
             if (i < wavePosition - 2.5) {
               span.innerText = originalChar;
               span.style.color = "var(--primary)";
-            } 
+            }
             // 2. JIKA HURUF BERADA DI DALAM AREA OMBAK (i < wavePosition)
             // Di area inilah huruf DIPAKSA NGACAK lebih lama -> warna --blue + karakter acak
             else if (i < wavePosition) {
-              const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+              const randomChar =
+                randomChars[Math.floor(Math.random() * randomChars.length)];
               span.innerText = randomChar;
               span.style.color = "var(--blue)";
-            } 
+            }
             // 3. JIKA OMBAK BELUM SAMPAI (i >= wavePosition)
             // Huruf antre menunggu giliran -> warna --secondary + huruf asli
             else {
@@ -225,21 +230,21 @@ function initNavScramble() {
             span.innerText = span.getAttribute("data-char");
             span.style.color = "var(--primary)";
           });
-        }
+        },
       });
     });
 
     link.addEventListener("mouseleave", () => {
       if (scrambleTween) scrambleTween.kill();
-      
+
       // RESET TOTAL: Kembalikan semua huruf ke warna `--secondary` (Hitam) dengan transisi halus
       letterSpans.forEach((span, i) => {
         span.innerText = span.getAttribute("data-char");
-        gsap.to(span, { 
-          color: "var(--secondary)", 
-          duration: 0.3, 
+        gsap.to(span, {
+          color: "var(--secondary)",
+          duration: 0.3,
           delay: i * 0.02, // Efek riak mundur halus dari depan ke belakang saat mouse keluar
-          ease: "power2.out" 
+          ease: "power2.out",
         });
       });
     });
@@ -295,7 +300,8 @@ function initBtnScramble() {
               span.innerText = originalChar;
               span.style.color = "var(--secondary)"; // Selesai ngacak jadi warna terang
             } else if (i < wavePosition) {
-              const randomChar = randomChars[Math.floor(Math.random() * randomChars.length)];
+              const randomChar =
+                randomChars[Math.floor(Math.random() * randomChars.length)];
               span.innerText = randomChar;
               span.style.color = "var(--blue)"; // Efek kilatan biru pas ngacak
             } else {
@@ -313,7 +319,7 @@ function initBtnScramble() {
             span.style.color = "var(--secondary)";
           });
         });
-      }
+      },
     });
   });
 
@@ -330,12 +336,90 @@ function initBtnScramble() {
           duration: 0.3,
           delay: i * 0.02, // Efek domino rontok yang mewah dari depan ke belakang
           ease: "power2.out",
-          overwrite: "auto"
+          overwrite: "auto",
         });
       });
     });
   });
 }
+
+const navLinks = document.querySelectorAll(".nav-menu-wrapper a");
+
+// Helper untuk deteksi kursor masuk/keluar dari ATAS atau BAWAH
+function getEntryDirection(e, element) {
+  const rect = element.getBoundingClientRect();
+  const mouseY = e.clientY - rect.top;
+  const halfHeight = rect.height / 2;
+
+  return mouseY < halfHeight ? "top" : "bottom";
+}
+
+navLinks.forEach((link) => {
+  const bg = link.querySelector(".link-bg");
+  const span = link.querySelector("span");
+
+  link.addEventListener("mouseenter", (e) => {
+    const direction = getEntryDirection(e, link);
+
+    // Set posisi awal clip-path berdasarkan arah masuk
+    if (direction === "top") {
+      gsap.set(bg, {
+        clipPath: "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)",
+      });
+    } else {
+      gsap.set(bg, {
+        clipPath: "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)",
+      });
+    }
+
+    // Animasi clip-path membuka penuh
+    gsap.to(bg, {
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+      duration: 0.7,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+
+    // Animasi pergeseran span & perubahan warna
+    gsap.to(span, {
+      x: 10,
+      color: "var(--primary)",
+      duration: 0.5,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  });
+
+  link.addEventListener("mouseleave", (e) => {
+    const direction = getEntryDirection(e, link);
+
+    let targetClip;
+    if (direction === "top") {
+      targetClip = "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)";
+    } else {
+      targetClip = "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)";
+    }
+
+    // Reset clip-path & posisi background
+    gsap.to(bg, {
+      clipPath: targetClip,
+      x: 0,
+      y: 0,
+      duration: 0.4,
+      ease: "power2.in",
+      overwrite: "auto",
+    });
+
+    // Reset posisi span & warna kembali ke awal
+    gsap.to(span, {
+      x: 0,
+      color: "", // Kembalikan ke warna default CSS
+      duration: 0.3,
+      ease: "power2.inOut",
+      overwrite: "auto",
+    });
+  });
+});
 
 // Jalankan fungsinya
 document.addEventListener("DOMContentLoaded", initBtnScramble);

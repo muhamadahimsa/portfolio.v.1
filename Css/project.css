@@ -79,6 +79,7 @@ body {
 .box.--link {
   padding: 0.35rem 3rem;
   position: relative;
+  overflow: hidden;
 }
 .link-bg {
   position: absolute;
