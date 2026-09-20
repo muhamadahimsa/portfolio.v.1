@@ -367,7 +367,7 @@ window.addEventListener("resize", () => {
       }
 
       // 5. Terapkan Skala Baru & Multiplier Manual
-      const multipliers = [.7, 0.7, 0.8, 1, 0.9, 0.8, 0.7];
+      const multipliers = [.5, 0.7, 0.8, 1, 0.9, 0.8, 0.7];
       const scaledFinal = finalScale * multipliers[idx];
       model.scale.setScalar(scaledFinal);
 
