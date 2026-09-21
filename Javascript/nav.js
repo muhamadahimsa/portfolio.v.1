@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const navFooter = document.querySelectorAll(".nav-menu-footer .ofh p");
   const openText = document.querySelector(".open");
   const closeText = document.querySelector(".close");
+  const navBg = document.querySelector('.nav-bg')
 
   let isAnimating = false;
 
@@ -67,7 +68,8 @@ document.addEventListener("DOMContentLoaded", () => {
     .to(navPages, { "--ty": "0%", duration: 1, stagger: 0.05 }, 0.35)
     .to(navFooter, { "--ty": "0%", duration: 1, stagger: 0.05 }, 0.35)
     .to(openText, { y: "-200%", duration: 1 }, 0)
-    .to(closeText, { y: "-0%", duration: 1 }, 0);
+    .to(closeText, { y: "-0%", duration: 1 }, 0)
+    .to(navBg, { display: 'flex', duration: 0.1 }, 0);
 
   // CLICK TOGGLE (Universal + Lenis Support)
   menuBtn.addEventListener("click", () => {

@@ -346,3 +346,13 @@ nav {
 .nav-menu-footer-wrapper{
   margin-bottom: 1rem;
 }
+
+.nav-bg{
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100svh;
+  width: 100vw;
+  z-index: 99;
+  display: none;
+}
