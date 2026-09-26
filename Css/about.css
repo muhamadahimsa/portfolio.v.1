@@ -159,7 +159,7 @@ p.info-title {
 
 .info-btn {
   position: absolute;
-  bottom: 2.25rem;
+  bottom: 7.25rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -422,7 +422,7 @@ h1 {
   }
 
   .info-btn{
-    bottom: 10rem;
+    bottom: 15rem;
   }
   .info-btn .--button .btn-wrapper {
     width: 35vw;
