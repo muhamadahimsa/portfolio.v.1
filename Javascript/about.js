@@ -38,8 +38,8 @@ const fragmentShader = `
     uniform float u_aberrationIntensity;
 
     void main() {
-        vec2 gridUV = floor(vUv * vec2(60.0, 60.0)) / vec2(60.0, 60.0);
-        vec2 centerOfPixel = gridUV + vec2(1.0/60.0, 1.0/60.0);
+        vec2 gridUV = floor(vUv * vec2(100.0, 100.0)) / vec2(100.0, 100.0);
+        vec2 centerOfPixel = gridUV + vec2(1.0/100.0, 1.0/100.0);
         
         vec2 mouseDirection = u_mouse - u_prevMouse;
         
